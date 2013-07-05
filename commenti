@@ -1,0 +1,10 @@
+Perche' il raspberry non chiedesse il login all'avvio:
+modificato /etc/mttab (come da: http://raspberrypi.stackexchange.com/questions/3873/auto-login-with-gui-disabled-in-raspbian )
+
+#1:2345:respawn:/sbin/getty --noclear 38400 tty1
+1:2345:respawn:/sbin/getty --autologin pi --noclear 38400 tty1
+
+(poi in ~/.bash_profile potrei mettere comando da eseguire all'avvio)
+
+aggiunto in /etc/module linea "i2c-dev" cosi' carica il modulo i2c-dev all'avvio
+dato "sudo usermod -aG i2c pi" per aggiungere utente al gruppo i2c cosi' puo' usarlo anche se non e' root

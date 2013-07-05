@@ -1,0 +1,195 @@
+<script src="http://code.jquery.com/jquery-1.10.0.min.js"></script>
+<script src="http://www.amcharts.com/lib/amcharts.js" type="text/javascript"></script>
+<div id="chartdiv" style="width: 100%; height: 340px;"></div>
+<div id="chartdivoo" style="margin-left:35px;">
+    <input type="radio" checked="true" name="group" id="rb1" onclick="setPanSelect()">Select
+    &nbsp;&nbsp;<input type="radio" name="group" id="rb2" onclick="setPanSelect()">Pan
+</div>
+
+<script>
+var chart;
+var chartData = [];
+var chartCursor;
+var baseURL = "http://crowdsensing.ismb.it/SC/rest/test-apis";
+var unita = "unita";
+
+// generate some random data, quite different range
+function generateChartData() {
+    var firstDate = new Date();
+    firstDate.setDate(firstDate.getDate() - 500);
+
+    for (var i = 0; i < 500; i++) {
+        var newDate = new Date(firstDate);
+        newDate.setDate(newDate.getDate() + i);
+
+        var visits = Math.round(Math.random() * 40) - 20;
+
+        chartData.push({
+            date: newDate,
+            visits: visits
+        });
+    }
+}
+
+// this method is called when chart is first inited as we listen for "dataUpdated" event
+function zoomChart() {
+    // different zoom methods can be used - zoomToIndexes, zoomToDates, zoomToCategoryValues
+    chart.zoomToIndexes(chartData.length - 40, chartData.length - 1);
+}
+
+// changes cursor mode from pan to select
+function setPanSelect() {
+    if (document.getElementById("rb1").checked) {
+        chartCursor.pan = false;
+        chartCursor.zoomable = true;
+
+    } else {
+        chartCursor.pan = true;
+    }
+    chart.validateNow();
+}
+
+function updateChartData(data) {
+	data.forEach(function(post) {
+		post.sensor_values.forEach(function(value) {
+			if (value.local_feed_id==getUrlVars()["feed"]) { //sensore delle polveri
+				chartData.push({
+					date: new Date(value.value_timestamp),
+					average: value.average_value,
+					variance: value.variance
+				});
+				console.log(value);
+				unita = value.units_of_measurement;
+			}
+		});
+	});
+}
+
+
+function getUrlVars() {
+    var vars = {};
+    var parts = window.location.href.replace(/[?&]+([^=&]+)=([^&]*)/gi, function(m,key,value) {
+        vars[key] = value;
+    });
+    return vars;
+}
+
+//"main":
+if(getUrlVars()["mac"]==undefined) {
+	$("body").append("<b>Seleziona un device:</b>");
+	$.getJSON("./proxy.php?url="+baseURL+"/devices",function(data) {
+		$("body").append("<ul>");
+		data.forEach(function(device) {
+			$("body").append("<li><a href=\"index.html?mac="+device.raspb_wifi_mac+"\">"+device.username+" ("+device.raspb_wifi_mac+")</a></li>");
+		});
+		$("body").append("</ul>");
+	});
+} else if (getUrlVars()["feed"]==undefined) {
+	$("body").append("<b>Seleziona un feed:</b>");
+	$.getJSON("./proxy.php?url="+baseURL+"/devices/"+getUrlVars()["mac"]+"/feeds",function(data) {
+		$("body").append("<ul>");
+		data.forEach(function(feed) {
+			$("body").append("<li><a href=\""+window.location.href+"&feed="+feed.local_feed_id+"\">"+feed.local_feed_id+" ("+feed.tags+")</a></li>");
+		});
+		$("body").append("</ul>");
+	});
+} else {
+	// create chart
+	AmCharts.ready(function() {
+		$.getJSON("./proxy.php?url=http://crowdsensing.ismb.it/SC/rest/test-apis/device/b8:27:eb:69:a4:20/posts",function(data) {
+			updateChartData(data);
+			// SERIAL CHART    
+			chart = new AmCharts.AmSerialChart();
+			chart.pathToImages = "http://www.amcharts.com/lib/images/";
+			chart.marginTop = 0;
+			chart.marginRight = 10;
+			chart.autoMarginOffset = 5;
+			chart.zoomOutButton = {
+				backgroundColor: '#000000',
+				backgroundAlpha: 0.15
+			};
+			chart.dataProvider = chartData;
+			chart.categoryField = "date";
+
+			// listen for "dataUpdated" event (fired when chart is rendered) and call zoomChart method when it happens
+			chart.addListener("dataUpdated", zoomChart);
+
+			// AXES
+			// category
+			var categoryAxis = chart.categoryAxis;
+			categoryAxis.parseDates = true; // as our data is date-based, we set parseDates to true
+			//categoryAxis.minPeriod = "DD"; // our data is daily, so we set minPeriod to DD
+			categoryAxis.minPeriod = "ss";
+			categoryAxis.dashLength = 1;
+			categoryAxis.gridAlpha = 0.15;
+			categoryAxis.axisColor = "#DADADA";
+
+			// value                
+			var valueAxis = new AmCharts.ValueAxis();
+			valueAxis.title = unita;
+			valueAxis.axisAlpha = 0.2;
+			valueAxis.dashLength = 1;
+			chart.addValueAxis(valueAxis);
+
+			// GRAPH
+			var graph = new AmCharts.AmGraph();
+			graph.title = "pm polveri";
+			graph.valueField = "average";
+			graph.bullet = "round";
+			graph.bulletBorderColor = "#FFFFFF";
+			graph.bulletBorderThickness = 2;
+			graph.lineThickness = 2;
+			graph.lineColor = "#b5030d";
+			graph.negativeLineColor = "#0352b5";
+			graph.hideBulletsCount = 50; // this makes the chart to hide bullets when there are more than 50 series in selection
+			chart.addGraph(graph);
+
+			//VARIANZA value axis 
+			var varianceAxis = new AmCharts.ValueAxis();
+			varianceAxis.title = "varianza";
+			varianceAxis.gridAlpha = 0;
+			varianceAxis.position = "right";
+			varianceAxis.inside = true;
+			varianceAxis.unit = "+-";
+			varianceAxis.axisAlpha = 0;
+			chart.addValueAxis(varianceAxis);
+
+			//varianza graph
+			distanceGraph = new AmCharts.AmGraph();
+			distanceGraph.valueField = "variance";
+			distanceGraph.title = "distance";
+			distanceGraph.type = "column";
+			distanceGraph.fillAlphas = 0.1;
+			distanceGraph.valueAxis = varianceAxis; // indicate which axis should be used
+			distanceGraph.balloonText = "+- [[value]]";
+			distanceGraph.legendValueText = "+- [[value]] pm";
+			distanceGraph.lineColor = "#000000";
+			distanceGraph.lineAlpha = 0;
+			chart.addGraph(distanceGraph);
+
+			// CURSOR
+			chartCursor = new AmCharts.ChartCursor();
+			chartCursor.cursorPosition = "mouse";
+			chart.addChartCursor(chartCursor);
+
+			// SCROLLBAR
+			var chartScrollbar = new AmCharts.ChartScrollbar();
+			chartScrollbar.graph = graph;
+			chartScrollbar.scrollbarHeight = 40;
+			chartScrollbar.color = "#FFFFFF";
+			chartScrollbar.autoGridCount = true;
+			chart.addChartScrollbar(chartScrollbar);
+
+			// WRITE
+			chart.write("chartdiv");
+		})
+
+		// generate some data first
+		//generateChartData();
+	});
+}
+
+
+
+
+</script>
