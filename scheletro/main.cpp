@@ -26,7 +26,7 @@ int main(int argc, char* argv[]) {
 	//avvio il thread di comunicazione col server
 	std::thread thread2(threadComunicazioneServer);
 
-	std::chrono::system_clock::time_point ultimoSalvataggio = std::chrono::system_clock::now();
+	auto ultimoSalvataggio = std::chrono::system_clock::now();
 	while(1) //while dell'USB (ogni 8ms)
 	{
 		if(SIMULATION) std::this_thread::sleep_for( std::chrono::milliseconds( 1000 ) );
@@ -54,7 +54,7 @@ int main(int argc, char* argv[]) {
 				lettureDaInviare.push_front(SensorReading(umidita_rasp));
 			}
 			
-			//notifico che c'e' roba da inviare in coda:
+			//notifico l'altro thread che c'e' roba da inviare in coda:
 			ciSonoLettureDaInviare.notify_one();
 
 			//resetto i conteggi per media e varianza

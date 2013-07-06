@@ -9,7 +9,6 @@ public:
 	SensorReading(Sensor s);
 	~SensorReading(void);
 
-private:
 	double average, variance;
 	int local_feed_id;
     std::string tags;   
