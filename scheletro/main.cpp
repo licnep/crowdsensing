@@ -41,7 +41,6 @@ int main(int argc, char* argv[]) {
 		auto millisecondiDaUltimoSalvataggio = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now() - ultimoSalvataggio).count();
 		if (millisecondiDaUltimoSalvataggio > 1000) //5*60*1000=5 minuti
 		{
-			cout << "passati 30 secondi" << endl;
 			ultimoSalvataggio = std::chrono::system_clock::now();
 			{
 				//ottengo il mutex per scrivere nella coda
@@ -77,17 +76,16 @@ void threadComunicazioneServer()
 	list<SensorReading> listaLocale;
 	while(1)
 	{
+		std::unique_lock<std::mutex> ul(mutexLettureDaInviare);
+		while (lettureDaInviare.empty())
 		{
-			//attende senza consumo risorse e vieni risvegliato solo se la condition variable della coda ti notifica
-			std::unique_lock<std::mutex> ul(mutexLettureDaInviare);
+			//attende (senza consumo risorse) che ci siano nuovi dati da inviare
 			ciSonoLettureDaInviare.wait(ul);
-
-			if (!lettureDaInviare.empty())
-			{
-				//copia tutti i dati da inviare nella coda locale, e svuota lettureDaInviare
-				listaLocale.splice(listaLocale.begin(),lettureDaInviare);
-			}
-		} //rilascio il mutex
+		}
+		//copia tutti i dati da inviare nella coda locale, e svuota lettureDaInviare
+		listaLocale.splice(listaLocale.begin(),lettureDaInviare);
+		//rilascio il mutex
+		ul.unlock();
 
 		if (!listaLocale.empty())
 		{
