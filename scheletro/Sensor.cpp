@@ -13,6 +13,12 @@ Sensor::~Sensor(void)
 {
 }
 
+void Sensor::aggiungiMisura(double misura)
+{
+	//TODO: implementare!
+	this->average = misura;
+}
+
 void Sensor::reset() 
 {
 	this->n_misure = 0;
