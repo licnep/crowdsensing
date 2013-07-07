@@ -58,8 +58,9 @@ int main(int argc, char* argv[]) {
 				temp_rasp.aggiungiMisura(temperaturaInterna*165.0/16382 - 40);
 				umidita_rasp.aggiungiMisura(umiditaInterna*100.0/16382);
 				//TODO: sta roba andrebbe fatta nella classe sensoreI2C
-				printf("UMIDITA': %d percento\n",umiditaInterna*100.0/16382);
-	            printf("TEMP    : %d C\n",temperaturaInterna*165.0/16382 - 40);
+				//printf("UMIDITA': %d percento\n",umiditaInterna*100.0/16382);
+	            //printf("TEMP    : %d C\n",temperaturaInterna*165.0/16382 - 40);
+				cout << "Temperatura media: " << temp_rasp.media() << endl;
 			}
 			sensoreInterno.send_measurement_request();
 			cicliDaUltimaRichiestaTemp = 0;
