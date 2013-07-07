@@ -50,10 +50,14 @@ int main(int argc, char* argv[]) {
 		cicliDaUltimaRichiesta++;
 		if (cicliDaUltimaRichiesta >=4)
 		{
-			sensoreInterno.humidity_and_temperature_data_fetch(&umiditaInterna,&temperaturaInterna);
+			int result = sensoreInterno.humidity_and_temperature_data_fetch(&umiditaInterna,&temperaturaInterna);
 			//TODO: sta roba andrebbe fatta nella classe sensoreI2C
-			printf("UMIDITA': %d percento\n",umiditaInterna*100/16382);
-			printf("TEMP    : %d C\n",temperaturaInterna*165/16382 - 40);
+			if (result==0)
+			{
+				//misura andata a buon fine, no stale data o altro
+				printf("UMIDITA': %d percento\n",umiditaInterna*100/16382);
+	                        printf("TEMP    : %d C\n",temperaturaInterna*165/16382 - 40);
+			}
 			sensoreInterno.send_measurement_request();
 			cicliDaUltimaRichiesta = 0;
 		}
