@@ -26,10 +26,11 @@ int main(int argc, char* argv[]) {
 
 	//TODO: Inizializza USB e I2C
 
-	//Inizializzazione I2C
-	SensoreI2C sensoreInterno;
-	unsigned int umiditaInterna, temperaturaInterna, cicliDaUltimaRichiesta = 0;
 
+	SensoreI2C sensoreInterno;
+	unsigned int umiditaInterna, temperaturaInterna, cicliDaUltimaRichiestaTemp = 0;
+
+	//Inizializzazione I2C
 	int error = sensoreInterno.init();
 	if (error!=0) 
 	{	
@@ -47,26 +48,25 @@ int main(int argc, char* argv[]) {
 		
 		//TODO: leggi tutti i sensori
 
-		cicliDaUltimaRichiesta++;
-		if (cicliDaUltimaRichiesta >=4)
+		cicliDaUltimaRichiestaTemp++;
+		if (cicliDaUltimaRichiestaTemp >=4)
 		{
 			int result = sensoreInterno.humidity_and_temperature_data_fetch(&umiditaInterna,&temperaturaInterna);
-			//TODO: sta roba andrebbe fatta nella classe sensoreI2C
-			if (result==0)
+			if (result==0) 	//misura andata a buon fine, no stale data o altro
 			{
-				//misura andata a buon fine, no stale data o altro
-				printf("UMIDITA': %d percento\n",umiditaInterna*100/16382);
-	                        printf("TEMP    : %d C\n",temperaturaInterna*165/16382 - 40);
+				temp_rasp.aggiungiMisura(temperaturaInterna*165.0/16382 - 40);
+				umidita_rasp.aggiungiMisura(umiditaInterna*100.0/16382);
+				//TODO: sta roba andrebbe fatta nella classe sensoreI2C
+				printf("UMIDITA': %d percento\n",umiditaInterna*100.0/16382);
+	            printf("TEMP    : %d C\n",temperaturaInterna*165.0/16382 - 40);
 			}
 			sensoreInterno.send_measurement_request();
-			cicliDaUltimaRichiesta = 0;
+			cicliDaUltimaRichiestaTemp = 0;
 		}
 
 		polveri.aggiungiMisura(5);
 		temp.aggiungiMisura(5);
 		umidita.aggiungiMisura(5);
-		temp_rasp.aggiungiMisura(5);
-		umidita_rasp.aggiungiMisura(5);
 
 		auto millisecondiDaUltimoSalvataggio = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now() - ultimoSalvataggio).count();
 		if (millisecondiDaUltimoSalvataggio > 1000) //5*60*1000=5 minuti
