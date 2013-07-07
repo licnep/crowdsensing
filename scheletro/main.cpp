@@ -6,6 +6,7 @@
 #include <chrono>
 #include "Sensor.h"
 #include "SensorReading.h"
+#include "SensoreI2C.h"
 
 #define SIMULATION true
 
