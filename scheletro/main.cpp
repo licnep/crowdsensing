@@ -26,6 +26,17 @@ int main(int argc, char* argv[]) {
 
 	//TODO: Inizializza USB e I2C
 
+	//Inizializzazione I2C
+	SensoreI2C sensoreInterno;
+	unsigned int umiditaInterna, temperaturaInterna;
+
+	int error = sensoreInterno.init();
+	if (error!=0) 
+	{	
+		cout << "Errore inizializzazione i2c. Uscita forzata." << endl;
+		exit(1);
+	}
+
 	//avvio il thread di comunicazione col server
 	std::thread thread2(threadComunicazioneServer);
 
@@ -35,6 +46,13 @@ int main(int argc, char* argv[]) {
 		if(SIMULATION) std::this_thread::sleep_for( std::chrono::milliseconds( 1000 ) );
 		
 		//TODO: leggi tutti i sensori
+		sensoreInterno.send_measurement_request();
+		sensoreInterno.humidity_and_temperature_data_fetch(&umiditaInterna,&temperaturaInterna);
+		//TODO: sta roba andrebbe fatta nella classe sensoreI2C
+		printf("UMIDITA': %d percento\n",umiditaInterna*100/16382);
+		printf("TEMP    : %d C\n",temperaturaInterna*165/16382 - 40);
+		exit(1);
+
 		polveri.aggiungiMisura(5);
 		temp.aggiungiMisura(5);
 		umidita.aggiungiMisura(5);
