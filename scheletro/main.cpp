@@ -44,6 +44,7 @@ int main(int argc, char* argv[]) {
 	auto ultimoSalvataggio = std::chrono::system_clock::now();
 	while(1) //while dell'USB (ogni 8ms)
 	{
+		//simuliamo l'attesa di 8ms, in produzione e' il codice bloccante dell'usb che ci fa aspettare
 		if(SIMULATION) std::this_thread::sleep_for( std::chrono::milliseconds( 10 ) );
 		
 		//TODO: leggi tutti i sensori
@@ -57,8 +58,7 @@ int main(int argc, char* argv[]) {
 				temp_rasp.aggiungiMisura(temperaturaInterna*165.0/16382 - 40);
 				umidita_rasp.aggiungiMisura(umiditaInterna*100.0/16382);
 				//TODO: sta roba andrebbe fatta nella classe sensoreI2C
-				cout << "UMIDITA': " << umiditaInterna*100.0/16382 << " percento" << endl;
-			        cout << "TEMP    : " << temperaturaInterna*165.0/16382 - 40 << " C" << endl;
+				cout << "Temperatura media: " << temp_rasp.media() << endl;
 			}
 			sensoreInterno.send_measurement_request();
 			cicliDaUltimaRichiestaTemp = 0;
@@ -106,10 +106,12 @@ void threadComunicazioneServer()
 	list<SensorReading> listaLocale;
 	while(1)
 	{
+		//acquisisco il mutex
 		std::unique_lock<std::mutex> ul(mutexLettureDaInviare);
 		while (lettureDaInviare.empty())
 		{
-			//attende (senza consumo risorse) che ci siano nuovi dati da inviare
+			//rilascia il mutex e attende (senza consumo risorse) che ci siano nuovi dati da inviare
+			//quando e' svegliato dalla condizione acquisice il mutex automaticamente
 			ciSonoLettureDaInviare.wait(ul);
 		}
 		//copia tutti i dati da inviare nella coda locale, e svuota lettureDaInviare
