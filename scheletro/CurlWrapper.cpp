@@ -19,7 +19,7 @@ CurlWrapper::~CurlWrapper(void)
     * @param message     [optional] only for POST requests
     * @return the string returned from the server
     */
-std::string CurlWrapper::sendMessage(int method,std::string APIendpoint,std::string message = std::string())
+std::string CurlWrapper::sendMessage(int method,std::string APIendpoint,std::string message)
 {        
     if (method!=GET&&method!=POST)
     {

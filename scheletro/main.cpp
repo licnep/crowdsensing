@@ -6,6 +6,7 @@
 #include <chrono>
 #include "Sensor.h"
 #include "SensorReading.h"
+#include "SensoreI2C.h"
 
 #define SIMULATION true
 
@@ -21,7 +22,21 @@ std::condition_variable ciSonoLettureDaInviare;
 int main(int argc, char* argv[]) {
 	Sensor polveri(01,"pm"), temp(02,"Celsius"), umidita(03,"%"), temp_rasp(11,"Celsius"), umidita_rasp(12,"%");
 	
+	cout << "Crowdsensing v0.0" << endl;
+
 	//TODO: Inizializza USB e I2C
+
+
+	SensoreI2C sensoreInterno;
+	unsigned int umiditaInterna, temperaturaInterna, cicliDaUltimaRichiestaTemp = 0;
+
+	//Inizializzazione I2C
+	int error = sensoreInterno.init();
+	if (error!=0) 
+	{	
+		cout << "Errore inizializzazione i2c. Uscita forzata." << endl;
+		exit(1);
+	}
 
 	//avvio il thread di comunicazione col server
 	std::thread thread2(threadComunicazioneServer);
@@ -30,14 +45,29 @@ int main(int argc, char* argv[]) {
 	while(1) //while dell'USB (ogni 8ms)
 	{
 		//simuliamo l'attesa di 8ms, in produzione e' il codice bloccante dell'usb che ci fa aspettare
-		if(SIMULATION) std::this_thread::sleep_for( std::chrono::milliseconds( 1000 ) );
+		if(SIMULATION) std::this_thread::sleep_for( std::chrono::milliseconds( 10 ) );
 		
 		//TODO: leggi tutti i sensori
+
+		cicliDaUltimaRichiestaTemp++;
+		if (cicliDaUltimaRichiestaTemp >=4)
+		{
+			int result = sensoreInterno.humidity_and_temperature_data_fetch(&umiditaInterna,&temperaturaInterna);
+			if (result==0) 	//misura andata a buon fine, no stale data o altro
+			{
+				temp_rasp.aggiungiMisura(temperaturaInterna*165.0/16382 - 40);
+				umidita_rasp.aggiungiMisura(umiditaInterna*100.0/16382);
+				//TODO: sta roba andrebbe fatta nella classe sensoreI2C
+				printf("UMIDITA': %d percento\n",umiditaInterna*100.0/16382);
+	            printf("TEMP    : %d C\n",temperaturaInterna*165.0/16382 - 40);
+			}
+			sensoreInterno.send_measurement_request();
+			cicliDaUltimaRichiestaTemp = 0;
+		}
+
 		polveri.aggiungiMisura(5);
 		temp.aggiungiMisura(5);
 		umidita.aggiungiMisura(5);
-		temp_rasp.aggiungiMisura(5);
-		umidita_rasp.aggiungiMisura(5);
 
 		auto millisecondiDaUltimoSalvataggio = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now() - ultimoSalvataggio).count();
 		if (millisecondiDaUltimoSalvataggio > 1000) //5*60*1000=5 minuti
