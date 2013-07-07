@@ -29,6 +29,7 @@ int main(int argc, char* argv[]) {
 	auto ultimoSalvataggio = std::chrono::system_clock::now();
 	while(1) //while dell'USB (ogni 8ms)
 	{
+		//simuliamo l'attesa di 8ms, in produzione e' il codice bloccante dell'usb che ci fa aspettare
 		if(SIMULATION) std::this_thread::sleep_for( std::chrono::milliseconds( 1000 ) );
 		
 		//TODO: leggi tutti i sensori
@@ -76,10 +77,12 @@ void threadComunicazioneServer()
 	list<SensorReading> listaLocale;
 	while(1)
 	{
+		//acquisisco il mutex
 		std::unique_lock<std::mutex> ul(mutexLettureDaInviare);
 		while (lettureDaInviare.empty())
 		{
-			//attende (senza consumo risorse) che ci siano nuovi dati da inviare
+			//rilascia il mutex e attende (senza consumo risorse) che ci siano nuovi dati da inviare
+			//quando e' svegliato dalla condizione acquisice il mutex automaticamente
 			ciSonoLettureDaInviare.wait(ul);
 		}
 		//copia tutti i dati da inviare nella coda locale, e svuota lettureDaInviare
