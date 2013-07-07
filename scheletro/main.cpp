@@ -21,6 +21,8 @@ std::condition_variable ciSonoLettureDaInviare;
 int main(int argc, char* argv[]) {
 	Sensor polveri(01,"pm"), temp(02,"Celsius"), umidita(03,"%"), temp_rasp(11,"Celsius"), umidita_rasp(12,"%");
 	
+	cout << "Crowdsensing v0.0" << endl;
+
 	//TODO: Inizializza USB e I2C
 
 	//avvio il thread di comunicazione col server

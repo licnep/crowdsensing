@@ -1,7 +1,16 @@
 #pragma once
 
-#include <curl.h>
+#include <stdio.h>
+#include <curl/curl.h>
 #include <string>
+#include <string.h>
+/*#include <cstdlib>
+#include <sstream>
+#include <algorithm>
+#include <jsoncpp/json/json.h>
+#include <jsoncpp/json/writer.h>
+#include <unistd.h>
+*/
 
 class CurlWrapper
 {
