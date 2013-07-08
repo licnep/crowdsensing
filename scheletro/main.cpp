@@ -7,6 +7,7 @@
 #include "Sensor.h"
 #include "SensorReading.h"
 #include "SensoreI2C.h"
+#include "CrowdSensing.h"
 
 #define SIMULATION true
 
@@ -26,18 +27,20 @@ int main(int argc, char* argv[]) {
 
 	//TODO: Inizializza USB e I2C
 
+        SensoreI2C sensoreInterno;
+        unsigned int umiditaInterna, temperaturaInterna, cicliDaUltimaRichiestaTemp = 0;
 
-	SensoreI2C sensoreInterno;
-	unsigned int umiditaInterna, temperaturaInterna, cicliDaUltimaRichiestaTemp = 0;
-
-	//Inizializzazione I2C
-	int error = sensoreInterno.init();
-	if (error!=0) 
-	{	
-		cout << "Errore inizializzazione i2c. Uscita forzata." << endl;
-		exit(1);
-	}
-
+        if (!SIMULATION)
+        {
+            //Inizializzazione I2C
+            int error = sensoreInterno.init();
+            if (error!=0) 
+            {	
+                    cout << "Errore inizializzazione i2c. Uscita forzata." << endl;
+                    exit(1);
+            }
+        }
+            
 	//avvio il thread di comunicazione col server
 	std::thread thread2(threadComunicazioneServer);
 
@@ -52,16 +55,17 @@ int main(int argc, char* argv[]) {
 		cicliDaUltimaRichiestaTemp++;
 		if (cicliDaUltimaRichiestaTemp >=4)
 		{
-			int result = sensoreInterno.humidity_and_temperature_data_fetch(&umiditaInterna,&temperaturaInterna);
-			if (result==0) 	//misura andata a buon fine, no stale data o altro
+                        int result = sensoreInterno.humidity_and_temperature_data_fetch(&umiditaInterna,&temperaturaInterna);
+                        if (SIMULATION) umiditaInterna = 50;temperaturaInterna = 100;
+			if (result==0||SIMULATION) 	//misura andata a buon fine, no stale data o altro
 			{
 				temp_rasp.aggiungiMisura(temperaturaInterna*165.0/16382 - 40);
 				umidita_rasp.aggiungiMisura(umiditaInterna*100.0/16382);
 				//TODO: sta roba andrebbe fatta nella classe sensoreI2C
-				cout << "Temperatura media: " << temp_rasp.media() << " C" << endl;
+				/*cout << "Temperatura media: " << temp_rasp.media() << " C" << endl;
 				cout << "Varianza: " << temp_rasp.varianza() << " C^2" << endl;
 				cout << "Umidita media: " << umidita_rasp.media() << " %" << endl;
-				cout << "Varianza: "" << umidita_rasp.varianza() << " %^2" << endl;
+				cout << "Varianza: " << umidita_rasp.varianza() << endl;*/
 			}
 			sensoreInterno.send_measurement_request();
 			cicliDaUltimaRichiestaTemp = 0;
@@ -72,7 +76,7 @@ int main(int argc, char* argv[]) {
 		umidita.aggiungiMisura(5);
 
 		auto millisecondiDaUltimoSalvataggio = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now() - ultimoSalvataggio).count();
-		if (millisecondiDaUltimoSalvataggio > 1000) //5*60*1000=5 minuti
+		if (millisecondiDaUltimoSalvataggio > 5000) //5*60*1000=5 minuti
 		{
 			ultimoSalvataggio = std::chrono::system_clock::now();
 			{
@@ -107,6 +111,12 @@ int main(int argc, char* argv[]) {
 void threadComunicazioneServer()
 {
 	list<SensorReading> listaLocale;
+        
+        //inizializzazione CrowdSensing
+        CrowdSensing cs("b8:27:eb:69:a4:20","gruppo35","password");
+        cs.addFeed(11,"raspberry, internal, temperature");
+        cs.addFeed(12,"raspberry, internal, humidity");
+        
 	while(1)
 	{
 		//acquisisco il mutex
@@ -124,7 +134,8 @@ void threadComunicazioneServer()
 
 		if (!listaLocale.empty())
 		{
-			//TODO: prova a inviare al server tutti i rilevamenti contenuti nella listaLocale
+                    //TODO: prova a inviare al server tutti i rilevamenti contenuti nella listaLocale
+                    cs.inviaRilevazioni(listaLocale);
 		}
 	}
 }

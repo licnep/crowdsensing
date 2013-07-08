@@ -1,16 +1,10 @@
 #pragma once
 
+#include <cstdlib>
 #include <stdio.h>
 #include <curl/curl.h>
 #include <string>
 #include <string.h>
-/*#include <cstdlib>
-#include <sstream>
-#include <algorithm>
-#include <jsoncpp/json/json.h>
-#include <jsoncpp/json/writer.h>
-#include <unistd.h>
-*/
 
 class CurlWrapper
 {
@@ -38,5 +32,4 @@ private:
     CURL *curl;
     CURLcode res; //used to store curl results
 };
-
 

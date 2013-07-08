@@ -1,5 +1,5 @@
 #include "SensorReading.h"
-
+#include "CrowdSensing.h"
 
 SensorReading::SensorReading(Sensor s)
 {
@@ -9,7 +9,7 @@ SensorReading::SensorReading(Sensor s)
 	this->local_feed_id = s.local_feed_id;
 	this->tags = s.tags;
 	this->units = s.units;
-	this->timestamp = "TODO: TIMESTAMP"; //TODO ottenere la stringa del timestamp attuale
+        this->timestamp = CrowdSensing::getCurrentDateUTC();
 }
 
 
