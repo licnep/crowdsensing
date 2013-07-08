@@ -56,7 +56,9 @@ int main(int argc, char* argv[]) {
 		if (cicliDaUltimaRichiestaTemp >=4)
 		{
                         int result = sensoreInterno.humidity_and_temperature_data_fetch(&umiditaInterna,&temperaturaInterna);
-                        if (SIMULATION) umiditaInterna = 50;temperaturaInterna = 100;
+                        if (SIMULATION) {
+                            umiditaInterna = 50;temperaturaInterna = 100;
+                        }
 			if (result==0||SIMULATION) 	//misura andata a buon fine, no stale data o altro
 			{
 				temp_rasp.aggiungiMisura(temperaturaInterna*165.0/16382 - 40);
