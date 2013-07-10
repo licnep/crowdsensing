@@ -119,7 +119,7 @@ int main(int argc, char* argv[]) {
                 //FINE LETTURA USB
 
 		cicliDaUltimaRichiestaTemp++;
-		if (cicliDaUltimaRichiestaTemp >=4)
+		if (cicliDaUltimaRichiestaTemp >=5)
 		{
                         int result = sensoreInterno.humidity_and_temperature_data_fetch(&umiditaInterna,&temperaturaInterna);
                         if (SIMULATION) {
@@ -140,7 +140,7 @@ int main(int argc, char* argv[]) {
 		}
 
 		auto millisecondiDaUltimoSalvataggio = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now() - ultimoSalvataggio).count();
-		if (millisecondiDaUltimoSalvataggio > 5000) //5*60*1000=5 minuti
+		if (millisecondiDaUltimoSalvataggio > 2000) //5*60*1000=5 minuti
 		{
 			ultimoSalvataggio = std::chrono::system_clock::now();
 			{
@@ -159,9 +159,9 @@ int main(int argc, char* argv[]) {
 			ciSonoLettureDaInviare.notify_one();
 
 			//resetto i conteggi per media e varianza
-			polveri.reset();
-			temp.reset();
-			umidita.reset();
+			s_polveri.reset();
+			s_temp.reset();
+			s_umidita.reset();
 			temp_rasp.reset();
 			umidita_rasp.reset();
 		}
@@ -190,8 +190,12 @@ void threadComunicazioneServer()
         
         //inizializzazione CrowdSensing
         CrowdSensing cs("b8:27:eb:69:a4:20","gruppo35","password");
+        Sensor s_polveri(01,"pm"), s_temp(02,"Celsius"), s_umidita(03,"%"), temp_rasp(11,"Celsius"), umidita_rasp(12,"%");
         cs.addFeed(11,"raspberry, internal, temperature");
         cs.addFeed(12,"raspberry, internal, humidity");
+        cs.addFeed(01,"external, dust");
+        cs.addFeed(02,"external, temperature");
+        cs.addFeed(03,"external, humidity");
         
 	while(1)
 	{
