@@ -246,7 +246,10 @@ void CrowdSensing::inviaRilevazioni(std::list<SensorReading> &lista)
     printf("[Sensor Post]:%s\n",result.c_str());
     
     //se inviato con successo svuoto la lista
-    lista.clear();
+    if (result.compare("")!=0) 
+    {
+        lista.clear();
+    }
     return;
 }
 
