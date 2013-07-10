@@ -27,7 +27,7 @@ std::mutex mutexLettureDaInviare;
 std::condition_variable ciSonoLettureDaInviare;
 
 int main(int argc, char* argv[]) {
-	Sensor polveri(01,"pm"), temp(02,"Celsius"), umidita(03,"%"), temp_rasp(11,"Celsius"), umidita_rasp(12,"%");
+	Sensor s_polveri(01,"pm"), s_temp(02,"Celsius"), s_umidita(03,"%"), temp_rasp(11,"Celsius"), umidita_rasp(12,"%");
 	
 	cout << "Crowdsensing v0.0" << endl;
 
@@ -108,9 +108,9 @@ int main(int argc, char* argv[]) {
                                 tempDouble=( (double)( temp<<6 |data[5]>>2 )/16382.0)*165.0-40;
 			}
 			//printf("MISURE\ndensita' polvere: %f mg/m^3\numidità: %d%\ntemperatura: %d°\n\n",dust,hum,temp);
-                        polveri.aggiungiMisura(dustDouble);
-                        temp.aggiungiMisura(tempDouble);
-                        umidita.aggiungiMisura(humDouble);
+                        s_polveri.aggiungiMisura(dustDouble);
+                        s_temp.aggiungiMisura(tempDouble);
+                        s_umidita.aggiungiMisura(humDouble);
                         
 		}
 		else
@@ -148,9 +148,9 @@ int main(int argc, char* argv[]) {
 				std::lock_guard<std::mutex> l(mutexLettureDaInviare);
 				//TODO: forse si potrebbe usare try_lock_for() per evitare di perdere la sincronizzazione usb
 				//aggiunge tutti i valori alla coda
-				lettureDaInviare.push_front(SensorReading(polveri));
-				lettureDaInviare.push_front(SensorReading(temp));
-				lettureDaInviare.push_front(SensorReading(umidita));
+				lettureDaInviare.push_front(SensorReading(s_polveri));
+				lettureDaInviare.push_front(SensorReading(s_temp));
+				lettureDaInviare.push_front(SensorReading(s_umidita));
 				lettureDaInviare.push_front(SensorReading(temp_rasp));
 				lettureDaInviare.push_front(SensorReading(umidita_rasp));
 			}
