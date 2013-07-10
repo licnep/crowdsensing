@@ -97,14 +97,15 @@ int main(int argc, char* argv[]) {
                 //LETTURA USB
                 
                 if(r == 0 && actual == 6){
+                        double humDouble, tempDouble;
 			dust=(data[0]<<8)|data[1];
 			vdust=dust*4/1024;
 			dust=(0.172*vdust);//qui manca qualcosa
 			if((data[2]>>6)==0){
 				hum = data[2];
-								temp = data[4];
-								hum = ( (float) ( hum<<8 | data[3] )/16382)*100;
-								temp=( (float)( temp<<6 |data[5]>>2 )/16382)*165-40;
+                                temp = data[4];
+                                humDouble = ( (double) ( hum<<8 | data[3] )/16382.0)*100.0;
+                                tempDouble=( (double)( temp<<6 |data[5]>>2 )/16382.0)*165.0-40;
 			}
 			//printf("MISURE\ndensita' polvere: %f mg/m^3\numidità: %d%\ntemperatura: %d°\n\n",dust,hum,temp);
                         polveri.aggiungiMisura(dust);
