@@ -8,8 +8,14 @@
 #include "SensorReading.h"
 #include "SensoreI2C.h"
 #include "CrowdSensing.h"
+#include <stdio.h>
+#include <libusb-1.0/libusb.h>
 
-#define SIMULATION true
+#define my_vid 0x04d8
+#define my_pid 0x0023
+#define ep 0x81
+
+#define SIMULATION false
 
 void threadComunicazioneServer(); //definito piu' in basso
 
@@ -26,6 +32,41 @@ int main(int argc, char* argv[]) {
 	cout << "Crowdsensing v0.0" << endl;
 
 	//TODO: Inizializza USB e I2C
+        //INIZIALIZZAZIONE USB
+        
+        int i;
+	int r,actual;
+	unsigned char data[6];
+	unsigned short hum=0,temp=0;
+	float dust=0,vdust;
+
+	libusb_context *ctx = NULL;
+	libusb_device_handle *dev_handle;
+	r=libusb_init(&ctx);
+	if(r!=0){
+		printf("Init error\n");
+		return 1;
+	}
+	libusb_set_debug(ctx, 3);
+	dev_handle = libusb_open_device_with_vid_pid(ctx, my_vid, my_pid);
+	if(dev_handle == NULL)
+		printf("Cannot open device\n");
+	else
+		printf("Device opened\n");
+	if(libusb_kernel_driver_active(dev_handle, 0) == 1) {
+		printf("Kernel driver active\n");
+		if(libusb_detach_kernel_driver(dev_handle, 0) == 0)
+			printf("Kernel driver detached\n");
+	}
+	r = libusb_claim_interface(dev_handle, 0);
+	if(r < 0) {
+		printf("Cannot claim interface\n");
+		return 1;
+	}
+	printf("Claimed interface\n\n");
+        
+        //////////////////// FINE USB
+        
 
         SensoreI2C sensoreInterno;
         unsigned int umiditaInterna, temperaturaInterna, cicliDaUltimaRichiestaTemp = 0;
@@ -49,8 +90,32 @@ int main(int argc, char* argv[]) {
 	{
 		//simuliamo l'attesa di 8ms, in produzione e' il codice bloccante dell'usb che ci fa aspettare
 		if(SIMULATION) std::this_thread::sleep_for( std::chrono::milliseconds( 10 ) );
+                else r = libusb_interrupt_transfer(dev_handle,ep , data, 6, &actual, 0);
 		
 		//TODO: leggi tutti i sensori
+                
+                //LETTURA USB
+                
+                if(r == 0 && actual == 6){
+			dust=(data[0]<<8)|data[1];
+			vdust=dust*4/1024;
+			dust=(0.172*vdust);//qui manca qualcosa
+			if((data[2]>>6)==0){
+				hum = data[2];
+								temp = data[4];
+								hum = ( (float) ( hum<<8 | data[3] )/16382)*100;
+								temp=( (float)( temp<<6 |data[5]>>2 )/16382)*165-40;
+			}
+			//printf("MISURE\ndensita' polvere: %f mg/m^3\numidità: %d%\ntemperatura: %d°\n\n",dust,hum,temp);
+                        polveri.aggiungiMisura(dust);
+                        temp.aggiungiMisura(temp);
+                        umidita.aggiungiMisura(hum);
+                        
+		}
+		else
+			printf("Read error\n");
+                
+                //FINE LETTURA USB
 
 		cicliDaUltimaRichiestaTemp++;
 		if (cicliDaUltimaRichiestaTemp >=4)
@@ -72,10 +137,6 @@ int main(int argc, char* argv[]) {
 			sensoreInterno.send_measurement_request();
 			cicliDaUltimaRichiestaTemp = 0;
 		}
-
-		polveri.aggiungiMisura(5);
-		temp.aggiungiMisura(5);
-		umidita.aggiungiMisura(5);
 
 		auto millisecondiDaUltimoSalvataggio = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now() - ultimoSalvataggio).count();
 		if (millisecondiDaUltimoSalvataggio > 5000) //5*60*1000=5 minuti
@@ -105,6 +166,18 @@ int main(int argc, char* argv[]) {
 		}
 	}
 
+        //CHIUSURA USB
+        r = libusb_release_interface(dev_handle, 0);
+	if(r!=0) {
+		printf("Cannot release interface\n");
+		return 1;
+	}
+	printf("Released interface\n");
+	libusb_close(dev_handle);
+	printf("Device closed\n");
+	libusb_exit(ctx);
+        //FINE CHIUSURA USB
+        
 	thread2.join();
 	return 0;
 }
