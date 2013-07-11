@@ -199,22 +199,25 @@ void threadComunicazioneServer()
         
 	while(1)
 	{
-                cout << "asd1" << endl;
+                cout << "Inizio loop" << endl;
 		//acquisisco il mutex
 		std::unique_lock<std::mutex> ul(mutexLettureDaInviare);
 		while (lettureDaInviare.empty())
 		{
+                        cout << "Attesa condVariable" << endl;
 			//rilascia il mutex e attende (senza consumo risorse) che ci siano nuovi dati da inviare
 			//quando e' svegliato dalla condizione acquisice il mutex automaticamente
 			ciSonoLettureDaInviare.wait(ul); //TODO fare lambda 
 		}
 		//copia tutti i dati da inviare nella coda locale, e svuota lettureDaInviare
+                //TODO invece della doppia copia, shara i sensori e fai qui copia e reset
 		listaLocale.splice(listaLocale.begin(),lettureDaInviare);
 		//rilascio il mutex
 		ul.unlock();
 
 		if (!listaLocale.empty())
 		{
+                    std::cout << listaLocale.size() << " rilevazioni da inviare in listaLocale" << endl;
                     //TODO: prova a inviare al server tutti i rilevamenti contenuti nella listaLocale
                     cs.inviaRilevazioni(listaLocale);
 		}
