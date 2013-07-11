@@ -119,7 +119,7 @@ int main(int argc, char* argv[]) {
                 //FINE LETTURA USB
 
 		cicliDaUltimaRichiestaTemp++;
-		if (cicliDaUltimaRichiestaTemp >=5)
+		if (cicliDaUltimaRichiestaTemp >5)
 		{
                         int result = sensoreInterno.humidity_and_temperature_data_fetch(&umiditaInterna,&temperaturaInterna);
                         if (SIMULATION) {
@@ -140,7 +140,7 @@ int main(int argc, char* argv[]) {
 		}
 
 		auto millisecondiDaUltimoSalvataggio = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now() - ultimoSalvataggio).count();
-		if (millisecondiDaUltimoSalvataggio > 2000) //5*60*1000=5 minuti
+		if (millisecondiDaUltimoSalvataggio > 5*60*1000) //5*60*1000=5 minuti
 		{
 			ultimoSalvataggio = std::chrono::system_clock::now();
 			{

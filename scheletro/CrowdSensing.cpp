@@ -240,7 +240,7 @@ void CrowdSensing::inviaRilevazioni(std::list<SensorReading> &lista)
     std::stringstream json;
     json << writer.write(root);
     
-    std::cout << json.str();
+    // std::cout << json.str();
     
     std::string  result = cw.sendMessage(CurlWrapper::POST,baseURL + "/device/" +raspb_wifi_mac + "/posts",json.str().c_str());
     //printf("[Sensor Post]:%s\n",result.c_str());
@@ -248,10 +248,10 @@ void CrowdSensing::inviaRilevazioni(std::list<SensorReading> &lista)
     //se inviato con successo svuoto la lista
     if (result.compare("")!=0) 
     {
-        std::cout << "Inviati con successo" << endl;
+        std::cout << "Inviati con successo" << std::endl;
         lista.clear();
     } else {
-        std::cout << "Errore nell'invio, riprovo dopo." << endl;
+        std::cout << "Errore nell'invio, riprovo dopo." << std::endl;
     }
     return;
 }
