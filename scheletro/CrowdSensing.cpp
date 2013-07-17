@@ -1,6 +1,7 @@
 #include <list>
 
 #include "CrowdSensing.h"
+#include <chrono>
 
 /**
  * By default it uses the test API endpoint. Call setDeployment() to use the deployment endpoint
@@ -219,7 +220,7 @@ void CrowdSensing::sensorPost()
  * Prova a inviare la lista di rilevazioni, se ha successo svuota la lista
  * @param lista
  */
-void CrowdSensing::inviaRilevazioni(std::list<SensorReading> &lista)
+int CrowdSensing::inviaRilevazioni(std::list<SensorReading> &lista)
 {
     Json::StyledWriter writer;
     Json::Value root; //root json element
@@ -248,12 +249,34 @@ void CrowdSensing::inviaRilevazioni(std::list<SensorReading> &lista)
     //se inviato con successo svuoto la lista
     if (result.compare("")!=0) 
     {
-        std::cout << "Inviati con successo" << std::endl;
-        lista.clear();
+        std::cout << getCurrentDateUTC() << "RISPOSTA: " << result.c_str() << std::endl;
+        //se tutto e' andato bene il server risponde con lo stesso json che gli e' stato inviato
+        //facciamo il parsing dello json per verificare
+        Json::Value rootReply;   // will contains the root value after parsing.
+        Json::Reader reader;
+        bool parsingSuccessful = reader.parse( result, rootReply );
+        if ( !parsingSuccessful )
+        {       
+            // report to the user the failure and their locations in the document.
+            std::cout << getCurrentDateUTC() << " Failed to parse json response: \n" << reader.getFormattedErrorMessages();
+            return 0;
+        } 
+        else {
+            if (rootReply["raspb_wifi_mac"].asString().compare(raspb_wifi_mac)==0) 
+            {
+                std::cout << "il mac della risposta corrisponde!!!!\n" ;
+                lista.clear();
+                return 1;
+            } 
+            else {
+                std::cout << "mac DIVERSI :(\n" ;
+                return 0;
+            }
+        }
     } else {
-        std::cout << "Errore nell'invio, riprovo dopo." << std::endl;
+        std::cout << CrowdSensing::getCurrentDateUTC() << " Errore nell'invio, riprovo dopo." << std::endl;
     }
-    return;
+    return 0;
 }
 
 void CrowdSensing::authorize(std::string  group_id, std::string  password)

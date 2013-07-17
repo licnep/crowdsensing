@@ -39,7 +39,7 @@ public:
     void checkAuthorization(std::string  username);
     std::map<int,feed> get_local_feeds();
     
-    void inviaRilevazioni(std::list<SensorReading> &lista);
+    int inviaRilevazioni(std::list<SensorReading> &lista);
     
     static std::string  getCurrentDateUTC();
     
