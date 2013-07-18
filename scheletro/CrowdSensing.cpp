@@ -28,7 +28,7 @@ CrowdSensing::CrowdSensing(std::string  raspb_wifi_mac,std::string  username, st
 
 void CrowdSensing::setDeployment()
 {
-    //baseURL = "http://crowdsensing.ismb.it/SC/rest/apis";
+    baseURL = "http://crowdsensing.ismb.it/SC/rest/apis";
 }
 
 void CrowdSensing::checkAPIVersion() 
@@ -225,8 +225,18 @@ int CrowdSensing::inviaRilevazioni(std::list<SensorReading> &lista)
     Json::StyledWriter writer;
     Json::Value root; //root json element
     root["send_timestamp"] = getCurrentDateUTC();
-    //populate the "sensor_values" array with all our feeds
     
+    //per latitudine e longitudine usato http://diveintohtml5.info/geolocation.html
+    Json::Value position;
+    position["kind"] = "latitude#location";
+    position["timestampMs"] = "1374105807337";
+    position["latitude"] = (double)45.4626922; //ivrea, via miniere
+    position["longitude"] = (double)7.87265;
+    position["accuracy"] = 71;
+    position["height_meters"] = 0;
+    root["position"] = position;
+    
+    //populate the "sensor_values" array with all our feeds
     for ( std::list<SensorReading>::iterator i = lista.begin(); i!=lista.end(); i++ )
     {
         Json::Value sensor_values;

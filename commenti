@@ -8,3 +8,6 @@ modificato /etc/mttab (come da: http://raspberrypi.stackexchange.com/questions/3
 
 aggiunto in /etc/module linea "i2c-dev" cosi' carica il modulo i2c-dev all'avvio
 dato "sudo usermod -aG i2c pi" per aggiungere utente al gruppo i2c cosi' puo' usarlo anche se non e' root
+
+usato daemontools perche' sia sempre attivo il servizio (vedi: http://blog.rtwilson.com/how-to-set-up-a-simple-service-to-run-in-the-background-on-a-linux-machine-using-daemontools/)
+creato /etc/service/crowdsensing/run

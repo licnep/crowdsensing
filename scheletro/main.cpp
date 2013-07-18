@@ -24,7 +24,7 @@ std::mutex mutexLettureDaInviare;
 std::condition_variable ciSonoLettureDaInviare;
 
 int main(int argc, char* argv[]) {
-	Sensor s_polveri(01,"ug/m^3"), s_temp(02,"Celsius"), s_umidita(03,"%"), temp_rasp(11,"Celsius"), umidita_rasp(12,"%");
+	Sensor s_polveri(01,"mg/m^3"), s_temp(02,"Celsius"), s_umidita(03,"%"), temp_rasp(11,"Celsius"), umidita_rasp(12,"%");
 	
 	cout << "Crowdsensing v0.0" << endl;
         
@@ -121,8 +121,10 @@ void threadComunicazioneServer()
 	list<list<SensorReading>> listaLocale;
         
         //inizializzazione CrowdSensing
-        CrowdSensing cs("b8:27:eb:69:a4:20","gruppo35","password");
-        Sensor s_polveri(01,"ug/m^3"), s_temp(02,"Celsius"), s_umidita(03,"%"), temp_rasp(11,"Celsius"), umidita_rasp(12,"%");
+        CrowdSensing cs("80:1f:02:87:82:84","gruppo35","password");
+        cs.setDeployment(); //ATTENZIONE! cosi' inviamo alla versione deplyment, non a quella test
+        
+        Sensor s_polveri(01,"mg/m^3"), s_temp(02,"Celsius"), s_umidita(03,"%"), temp_rasp(11,"Celsius"), umidita_rasp(12,"%");
         cs.addFeed(11,"raspberry internal temperature");
         cs.addFeed(12,"raspberry internal humidity");
         cs.addFeed(01,"external dust");
@@ -139,7 +141,6 @@ void threadComunicazioneServer()
                 //quando e' svegliato dalla condizione acquisice il mutex automaticamente
                 ciSonoLettureDaInviare.wait(ul,[&]{return !lettureDaInviare.empty();});
 		//copia tutti i dati da inviare nella coda locale, e svuota lettureDaInviare
-                //TODO invece della doppia copia, shara i sensori e fai qui copia e reset
                 listaLocale.push_front( list<SensorReading>(lettureDaInviare) );
                 lettureDaInviare.clear();
 		//listaLocale.splice(listaLocale.begin(),lettureDaInviare);
@@ -147,17 +148,23 @@ void threadComunicazioneServer()
 		ul.unlock();
 
                 auto tPrimoInvio = std::chrono::system_clock::now();
-                //riprova invio finche' la lista non e' vuota o non sono passati 4 minuti
+                //ritrasmissione finche' la lista non e' vuota o non sono passati 4 minuti
 		while (!listaLocale.empty() && ( std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now() - tPrimoInvio).count() < 4*60*1000) )
 		{
                     std::cout << CrowdSensing::getCurrentDateUTC() << " " << listaLocale.size() << " rilevazioni da inviare in listaLocale" << endl;
                     if(cs.inviaRilevazioni(listaLocale.back()))
                     {
+                        //inviata con successo
                         listaLocale.pop_back();
                     }
                     //attende un po' prima di ritentare il rinvio
                     std::this_thread::sleep_for( std::chrono::milliseconds( 1000 ) );
 		}
-                //TODO la lunghezza della lista andrebbe limitata
+                //limitiamo la lunghezza della coda, conserva massimo 3 giorni di rilevazioni
+                while (listaLocale.size()>1000)
+                {
+                    listaLocale.pop_back();
+                }
+                
 	}
 }

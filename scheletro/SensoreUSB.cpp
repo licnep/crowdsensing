@@ -54,7 +54,7 @@ int SensoreUSB::interruptTransfer()
             dust=(data[0]<<8)|data[1];
             vdust=dust*4/1024;
             
-            dustDouble=(0.172*vdust)*1000;//ug/m^3 //qui manca qualcosa
+            dustDouble=(0.172*vdust);//mg/m^3 //qui manca qualcosa
             if((data[2]>>6)==0){
                     hum = data[2];
                     temp = data[4];
