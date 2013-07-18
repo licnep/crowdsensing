@@ -102,7 +102,7 @@ if(getUrlVars()["api"]==undefined) {
 } else {
 	// create chart
 	AmCharts.ready(function() {
-		$.getJSON(baseURL+"/device/"+getUrlVars()["mac"]+"/posts",function(data) {
+		$.getJSON("./proxy.php?url="+baseURL+"/device/"+getUrlVars()["mac"]+"/posts",function(data) {
 			updateChartData(data);
 			// SERIAL CHART    
 			chart = new AmCharts.AmSerialChart();
