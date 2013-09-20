@@ -65,13 +65,13 @@ int SensoreI2C::send_measurement_request()
 
 
 /**
-	humidity must be divided by 2^14-2 to get the percentage.
-	temperature must be divided by 2^14-2 and normalized between -40C and 125C
 	@returns -1 on error, 0 on success, 1 on stale data. Writes the readings in *humidity and *temperature
 */
-int SensoreI2C::humidity_and_temperature_data_fetch(unsigned int *humidity, unsigned int *temperature)
+int SensoreI2C::humidity_and_temperature_data_fetch(double *humidity, double *temperature)
 {
-	*humidity = *temperature = 0xFFFF; //set humidity and temp to invalid value in case the reading fails
+	unsigned int _humidity, _temperature;
+
+	_humidity = _temperature = 0xFFFF; //set humidity and temp to invalid value in case the reading fails
 	
 	unsigned char buffer[4] = {255,255,255,255};
 
@@ -104,9 +104,16 @@ int SensoreI2C::humidity_and_temperature_data_fetch(unsigned int *humidity, unsi
 
 	//if we are here status=0. Data is valid and can be parsed.
 
-	*humidity = ((buffer[0] & 0b00111111) << 8) | buffer[1];
-	*temperature = (buffer[2] << 6) | (buffer[3] >> 2);
+	_humidity = ((buffer[0] & 0b00111111) << 8) | buffer[1];
+	_temperature = (buffer[2] << 6) | (buffer[3] >> 2);
 
+
+	//conversion to double.
+	//humidity must be divided by 2^14-2 to get the percentage.
+	//temperature must be divided by 2^14-2 and normalized between -40C and 125C
+
+	*temperature = _temperature*165.0/16382 - 40;
+	*humidity = _humidity*100.0/16382;
 
 	return 0;
 }

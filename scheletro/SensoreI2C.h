@@ -14,7 +14,7 @@ class SensoreI2C
 	~SensoreI2C();
 	int init();
 	int send_measurement_request();
-	int humidity_and_temperature_data_fetch(unsigned int *humidity, unsigned int *temperature);
+	int humidity_and_temperature_data_fetch(double *humidity, double *temperature);
 
 	private:
 	int file;
