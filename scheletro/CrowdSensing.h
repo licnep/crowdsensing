@@ -8,6 +8,14 @@
 #include "CurlWrapper.h"
 #include "SensorReading.h"
 #include <list>
+#include <iwlib.h>
+
+struct apinfo_s{
+    iwrange range;
+    wireless_scan_head head; 		
+};
+
+typedef struct apinfo_s apinfo;
 
 class feed
 {
@@ -28,6 +36,10 @@ public:
     void setDeployment();
     void checkAPIVersion() ;
     std::string  listRegisteredDevices();
+    //
+    apinfo getAPList();
+    void getLocation();
+    //
     int getDeviceIDFromMac(std::string  mac_address);
     void getDeviceInfo(std::string  MACaddress);
     void addDevice();
@@ -50,5 +62,6 @@ private:
     std::string  username;
     std::string  password;
     std::map<int, feed> local_feeds;
+	Json::Value position;
 };
 

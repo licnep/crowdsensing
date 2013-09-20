@@ -86,16 +86,11 @@ json << "[";
 		level -= 0x100;
 	}
 
-/*
-[{"macAddress":"00:22:fb:8f:9d:fe","signalStrength":-65,"age":0,"channel":11,"signalToNoiseRatio":40},{"macAddress":"00:21:f3:af:1d:fa","signalStrength":-63,"age":0,"channel":15,"signalToNoiseRatio":45}]
-
-*/
-
-             json <<   "{\"macAddress\":\"" << iw_sawap_ntop(&result->ap_addr, buffer) << "\"," //e' required
-                    "\"signalStrength\":"  << level << ", " 
-                        "\"age\":0,"
-                        "\"channel\":"<< iw_freq_to_channel(result->b.freq,&(info.range))  << ","
-                        "\"signalToNoiseRatio\":" << (int)result->stats.qual.qual  << "}";	
+     json <<   "{\"macAddress\":\"" << iw_sawap_ntop(&result->ap_addr, buffer) << "\"," //e' required
+            "\"signalStrength\":"  << level << ", " 
+                "\"age\":0,"
+                "\"channel\":"<< iw_freq_to_channel(result->b.freq,&(info.range))  << ","
+                "\"signalToNoiseRatio\":" << (int)result->stats.qual.qual  << "}";	
 
     printf("%s, \t %d dBm \t %s \n", result->b.essid, level, buffer);
 
@@ -106,8 +101,28 @@ json << "[";
 
     json << "]";
     std::cout << json.str() << "\n\n";
-    authorize(this->username,this->password);
-    std::string  sresult = cw.sendMessage(CurlWrapper::POST,baseURL + "/device/" +raspb_wifi_mac + "/geolocate",json.str().c_str());
+
+	std::string jsonTEST = "[{"
+"   \"macAddress\": \"00:19:E0:6D:C1:DE\""
+"  }"
+"  ,{"
+"   \"macAddress\": \"00:24:89:9C:2D:16\""
+"  },"
+"  {"
+"   \"macAddress\": \"00:21:96:5E:A7:BC\""
+"  }"
+"  ,{"
+"   \"macAddress\": \"A4:52:6F:23:AD:56\""
+"  },"
+"  {"
+"   \"macAddress\": \"20:C9:D0:AC:7B:6E\""
+"  }"
+"  ,{"
+"   \"macAddress\": \"00:1E:2A:F6:BC:04 \""
+"  }"
+" ]";
+
+    std::string  sresult = cw.sendMessage(CurlWrapper::POST,baseURL + "/device/" +raspb_wifi_mac + "/geolocate",jsonTEST, true);
     printf("[Sensor Location Post]:%s\n\n",sresult.c_str());
 
     Json::Reader reader;
@@ -122,6 +137,8 @@ json << "[";
     //look for a device with this mac address
     if(root.isArray())
     {
+
+
 //TO DO: qui interpreto la risposta e riempio l'array associativo position 
 	this->position["kind"] = "latitude#location";
 	for(int i=0;i<root.size();i++)
