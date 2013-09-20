@@ -2,6 +2,7 @@
 
 #include "CrowdSensing.h"
 #include <chrono>
+#include <iwlib.h>
 
 /**
  * By default it uses the test API endpoint. Call setDeployment() to use the deployment endpoint
@@ -16,6 +17,7 @@ CrowdSensing::CrowdSensing(std::string  raspb_wifi_mac,std::string  username, st
 
     //return a warning if API version has been changed
     checkAPIVersion();
+	getLocation();
 
     //try to register this device if it isn't registered already
     int device_id = getDeviceIDFromMac(this->raspb_wifi_mac);
@@ -26,6 +28,131 @@ CrowdSensing::CrowdSensing(std::string  raspb_wifi_mac,std::string  username, st
         addDevice();
     }
 }
+
+//TO DO: vedere se è possibile ottenere la lista delle interfacce attive, così da selezionare dinamicamente quella giusta
+apinfo CrowdSensing::getAPList(){
+  apinfo info;	
+ //wireless_scan_head head;
+ //wireless_scan *result;
+ //iwstats stats;
+ //iwrange range;
+  int sock;
+
+
+  /* Open socket to kernel */
+  sock = iw_sockets_open();
+
+  /* Get some metadata to use for scanning */
+  if (iw_get_range_info(sock, "wlan0", &(info.range)) < 0) {
+//TO DO: qui fare un blocco try-catch e gestire l'errore
+    printf("Error during iw_get_range_info. Aborting.\n");
+    exit(2);
+  }
+
+  /* Perform the scan */
+  if (iw_scan(sock, "wlan0", info.range.we_version_compiled, &(info.head)) < 0) {
+//TO DO: qui fare un blocco try-catch e gestire l'errore
+    printf("Error during iw_scan. Aborting.\n");
+    exit(2);
+  }
+
+return info;
+
+}
+
+void CrowdSensing::getLocation(){
+/*------
+    position["kind"] = "latitude#location";
+    position["timestampMs"] = "1374105807337";
+    position["latitude"] = (double)45.4626922; //ivrea, via miniere
+    position["longitude"] = (double)7.87265;
+    position["accuracy"] = 71;
+    position["height_meters"] = 0;
+-----*/
+int level=0;
+char buffer[128];
+std::stringstream json;    
+//wireless_scan_head *result = getAPList();
+apinfo info=getAPList();
+wireless_scan *result=info.head.result;
+
+json << "[";
+  while (NULL != result) {
+	
+	level = result->stats.qual.level;
+	
+	//se il livello>64 toglie 256...non ho capito ancora perchè ma funge
+	if(level >= 64){
+		level -= 0x100;
+	}
+
+/*
+[{"macAddress":"00:22:fb:8f:9d:fe","signalStrength":-65,"age":0,"channel":11,"signalToNoiseRatio":40},{"macAddress":"00:21:f3:af:1d:fa","signalStrength":-63,"age":0,"channel":15,"signalToNoiseRatio":45}]
+
+*/
+
+             json <<   "{\"macAddress\":\"" << iw_sawap_ntop(&result->ap_addr, buffer) << "\"," //e' required
+                    "\"signalStrength\":"  << level << ", " 
+                        "\"age\":0,"
+                        "\"channel\":"<< iw_freq_to_channel(result->b.freq,&(info.range))  << ","
+                        "\"signalToNoiseRatio\":" << (int)result->stats.qual.qual  << "}";	
+
+    printf("%s, \t %d dBm \t %s \n", result->b.essid, level, buffer);
+
+    result = result->next;
+	if(result !=NULL)
+		json << ",";
+  }
+
+    json << "]";
+    std::cout << json.str() << "\n\n";
+    authorize(this->username,this->password);
+    std::string  sresult = cw.sendMessage(CurlWrapper::POST,baseURL + "/device/" +raspb_wifi_mac + "/geolocate",json.str().c_str());
+    printf("[Sensor Location Post]:%s\n\n",sresult.c_str());
+
+    Json::Reader reader;
+    Json::Value root;
+    bool parsingSuccessful = reader.parse( sresult, root );
+    if ( !parsingSuccessful )
+    {
+        fprintf( stderr,"Failed to parse geolocation\n%s",sresult.c_str() );
+        // to do: gestire l'errore! 
+	return;
+    }
+    //look for a device with this mac address
+    if(root.isArray())
+    {
+//TO DO: qui interpreto la risposta e riempio l'array associativo position 
+	this->position["kind"] = "latitude#location";
+	for(int i=0;i<root.size();i++)
+        {
+	if( root[i]=="location" ) {
+            try
+            {
+	        this->position["timestampMs"] = root[i]["timestampMs"].asString();
+                this->position["latitude"] = root[i]["lat"].asDouble();
+                this->position["longitude"] = root[i]["lng"].asDouble();
+		this->position["accuracy"] = root[i]["accuracy"].asInt();		
+	        this->position["height_meters"] = 0;
+
+
+            }
+            catch(std::exception e) 
+            {
+                printf("Exception while parsing location.\n");
+		//TO DO: gestire l'errore!
+		return;
+
+            }
+	}
+	//to do: gestire eventuali errori di parsing!!
+	}	
+    }
+
+
+
+}
+
 
 void CrowdSensing::checkAPIVersion() 
 {
@@ -223,13 +350,14 @@ int CrowdSensing::inviaRilevazioni(std::list<SensorReading> &lista)
     root["send_timestamp"] = getCurrentDateUTC();
     
     //per latitudine e longitudine usato http://diveintohtml5.info/geolocation.html
-    Json::Value position;
+    /*Json::Value position;
     position["kind"] = "latitude#location";
     position["timestampMs"] = "1374105807337";
     position["latitude"] = (double)45.4626922; //ivrea, via miniere
     position["longitude"] = (double)7.87265;
     position["accuracy"] = 71;
-    position["height_meters"] = 0;
+    position["height_meters"] = 0;*/
+
     root["position"] = position;
     
     //populate the "sensor_values" array with all our feeds
