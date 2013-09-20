@@ -88,7 +88,7 @@ int SensoreI2C::humidity_and_temperature_data_fetch(unsigned int *humidity, unsi
 	unsigned char status = buffer[0] >> 6; //right shift 6 times so status contains only the first 2 bits
 	if (status==0b0000001)
 	{
-		fprintf(stderr, "WARNING: stale data\n"); //you should read later or send a measurement request if you haven't
+		//fprintf(stderr, "WARNING: stale data\n"); //you should read later or send a measurement request if you haven't
 		return 1;
 	}
 	else if (status==0b00000010)

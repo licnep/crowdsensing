@@ -8,12 +8,9 @@
 #include "SensorReading.h"
 #include "SensoreI2C.h"
 #include "CrowdSensing.h"
+#include "SensoreUSB.h"
 #include <stdio.h>
 #include <libusb-1.0/libusb.h>
-
-#define my_vid 0x04d8
-#define my_pid 0x0023
-#define ep 0x81
 
 #define SIMULATION false
 
@@ -27,47 +24,13 @@ std::mutex mutexLettureDaInviare;
 std::condition_variable ciSonoLettureDaInviare;
 
 int main(int argc, char* argv[]) {
-	Sensor s_polveri(01,"pm"), s_temp(02,"Celsius"), s_umidita(03,"%"), temp_rasp(11,"Celsius"), umidita_rasp(12,"%");
+	Sensor s_polveri(01,"mg/m^3"), s_temp(02,"Celsius"), s_umidita(03,"%"), temp_rasp(11,"Celsius"), umidita_rasp(12,"%");
 	
 	cout << "Crowdsensing v0.0" << endl;
-
-	//TODO: Inizializza USB e I2C
-        //INIZIALIZZAZIONE USB
         
-        int i;
-	int r,actual;
-	unsigned char data[6];
-	unsigned short hum=0,temp=0;
-	float dust=0,vdust;
-
-	libusb_context *ctx = NULL;
-	libusb_device_handle *dev_handle;
-	r=libusb_init(&ctx);
-	if(r!=0){
-		printf("Init error\n");
-		return 1;
-	}
-	libusb_set_debug(ctx, 3);
-	dev_handle = libusb_open_device_with_vid_pid(ctx, my_vid, my_pid);
-	if(dev_handle == NULL)
-		printf("Cannot open device\n");
-	else
-		printf("Device opened\n");
-	if(libusb_kernel_driver_active(dev_handle, 0) == 1) {
-		printf("Kernel driver active\n");
-		if(libusb_detach_kernel_driver(dev_handle, 0) == 0)
-			printf("Kernel driver detached\n");
-	}
-	r = libusb_claim_interface(dev_handle, 0);
-	if(r < 0) {
-		printf("Cannot claim interface\n");
-		return 1;
-	}
-	printf("Claimed interface\n\n");
+        SensoreUSB sensoreUSB;
+        sensoreUSB.init();
         
-        //////////////////// FINE USB
-        
-
         SensoreI2C sensoreInterno;
         unsigned int umiditaInterna, temperaturaInterna, cicliDaUltimaRichiestaTemp = 0;
 
@@ -90,31 +53,14 @@ int main(int argc, char* argv[]) {
 	{
 		//simuliamo l'attesa di 8ms, in produzione e' il codice bloccante dell'usb che ci fa aspettare
 		if(SIMULATION) std::this_thread::sleep_for( std::chrono::milliseconds( 10 ) );
-                else r = libusb_interrupt_transfer(dev_handle,ep , data, 6, &actual, 0);
-		
-		//TODO: leggi tutti i sensori
+                else {
+                    //r = libusb_interrupt_transfer(dev_handle,ep , data, 6, &actual, 0);
+                    sensoreUSB.interruptTransfer();
+                }
                 
-                //LETTURA USB
-                
-                if(r == 0 && actual == 6){
-                        double humDouble, tempDouble, dustDouble;
-			dust=(data[0]<<8)|data[1];
-			vdust=dust*4/1024;
-			dustDouble=(0.172*vdust);//qui manca qualcosa
-			if((data[2]>>6)==0){
-				hum = data[2];
-                                temp = data[4];
-                                humDouble = ( (double) ( hum<<8 | data[3] )/16382.0)*100.0;
-                                tempDouble=( (double)( temp<<6 |data[5]>>2 )/16382.0)*165.0-40;
-			}
-			//printf("MISURE\ndensita' polvere: %f mg/m^3\numidità: %d%\ntemperatura: %d°\n\n",dust,hum,temp);
-                        s_polveri.aggiungiMisura(dustDouble);
-                        s_temp.aggiungiMisura(tempDouble);
-                        s_umidita.aggiungiMisura(humDouble);
-                        
-		}
-		else
-			printf("Read error\n");
+                s_polveri.aggiungiMisura(sensoreUSB.getDust());
+                s_temp.aggiungiMisura(sensoreUSB.getTemp());
+                s_umidita.aggiungiMisura(sensoreUSB.getHum());
                 
                 //FINE LETTURA USB
 
@@ -130,10 +76,6 @@ int main(int argc, char* argv[]) {
 				temp_rasp.aggiungiMisura(temperaturaInterna*165.0/16382 - 40);
 				umidita_rasp.aggiungiMisura(umiditaInterna*100.0/16382);
 				//TODO: sta roba andrebbe fatta nella classe sensoreI2C
-				/*cout << "Temperatura media: " << temp_rasp.media() << " C" << endl;
-				cout << "Varianza: " << temp_rasp.varianza() << " C^2" << endl;
-				cout << "Umidita media: " << umidita_rasp.media() << " %" << endl;
-				cout << "Varianza: " << umidita_rasp.varianza() << endl;*/
 			}
 			sensoreInterno.send_measurement_request();
 			cicliDaUltimaRichiestaTemp = 0;
@@ -167,17 +109,7 @@ int main(int argc, char* argv[]) {
 		}
 	}
 
-        //CHIUSURA USB
-        r = libusb_release_interface(dev_handle, 0);
-	if(r!=0) {
-		printf("Cannot release interface\n");
-		return 1;
-	}
-	printf("Released interface\n");
-	libusb_close(dev_handle);
-	printf("Device closed\n");
-	libusb_exit(ctx);
-        //FINE CHIUSURA USB
+        sensoreUSB.close();
         
 	thread2.join();
 	return 0;
@@ -186,40 +118,52 @@ int main(int argc, char* argv[]) {
 
 void threadComunicazioneServer()
 {
-	list<SensorReading> listaLocale;
+	list<list<SensorReading>> listaLocale;
         
         //inizializzazione CrowdSensing
-        CrowdSensing cs("b8:27:eb:69:a4:20","gruppo35","password");
-        Sensor s_polveri(01,"pm"), s_temp(02,"Celsius"), s_umidita(03,"%"), temp_rasp(11,"Celsius"), umidita_rasp(12,"%");
-        cs.addFeed(11,"raspberry, internal, temperature");
-        cs.addFeed(12,"raspberry, internal, humidity");
-        cs.addFeed(01,"external, dust");
-        cs.addFeed(02,"external, temperature");
-        cs.addFeed(03,"external, humidity");
+        CrowdSensing cs("80:1f:02:87:82:84","gruppo35","034FpK69l4",true); //true significa che comunichiamo con la versione non test
+        
+        Sensor s_polveri(01,"mg/m^3"), s_temp(02,"Celsius"), s_umidita(03,"%"), temp_rasp(11,"Celsius"), umidita_rasp(12,"%");
+        cs.addFeed(11,"raspberry internal temperature");
+        cs.addFeed(12,"raspberry internal humidity");
+        cs.addFeed(01,"external dust");
+        cs.addFeed(02,"external temperature");
+        cs.addFeed(03,"external humidity");
         
 	while(1)
 	{
-                cout << "Inizio loop" << endl;
-		//acquisisco il mutex
+		cout << CrowdSensing::getCurrentDateUTC() << " Acquisizione mutex" << endl;
+                //acquisisco il mutex
 		std::unique_lock<std::mutex> ul(mutexLettureDaInviare);
-		while (lettureDaInviare.empty())
-		{
-                        cout << "Attesa condVariable" << endl;
-			//rilascia il mutex e attende (senza consumo risorse) che ci siano nuovi dati da inviare
-			//quando e' svegliato dalla condizione acquisice il mutex automaticamente
-			ciSonoLettureDaInviare.wait(ul); //TODO fare lambda 
-		}
+                cout << CrowdSensing::getCurrentDateUTC() << " Attesa condVariable" << endl;
+                //rilascia il mutex e attende (senza consumo risorse) che ci siano nuovi dati da inviare
+                //quando e' svegliato dalla condizione acquisice il mutex automaticamente
+                ciSonoLettureDaInviare.wait(ul,[&]{return !lettureDaInviare.empty();});
 		//copia tutti i dati da inviare nella coda locale, e svuota lettureDaInviare
-                //TODO invece della doppia copia, shara i sensori e fai qui copia e reset
-		listaLocale.splice(listaLocale.begin(),lettureDaInviare);
+                listaLocale.push_front( list<SensorReading>(lettureDaInviare) );
+                lettureDaInviare.clear();
+		//listaLocale.splice(listaLocale.begin(),lettureDaInviare);
 		//rilascio il mutex
 		ul.unlock();
 
-		if (!listaLocale.empty())
+                auto tPrimoInvio = std::chrono::system_clock::now();
+                //ritrasmissione finche' la lista non e' vuota o non sono passati 4 minuti
+		while (!listaLocale.empty() && ( std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now() - tPrimoInvio).count() < 4*60*1000) )
 		{
-                    std::cout << listaLocale.size() << " rilevazioni da inviare in listaLocale" << endl;
-                    //TODO: prova a inviare al server tutti i rilevamenti contenuti nella listaLocale
-                    cs.inviaRilevazioni(listaLocale);
+                    std::cout << CrowdSensing::getCurrentDateUTC() << " " << listaLocale.size() << " rilevazioni da inviare in listaLocale" << endl;
+                    if(cs.inviaRilevazioni(listaLocale.back()))
+                    {
+                        //inviata con successo
+                        listaLocale.pop_back();
+                    }
+                    //attende un po' prima di ritentare il rinvio
+                    std::this_thread::sleep_for( std::chrono::milliseconds( 1000 ) );
 		}
+                //limitiamo la lunghezza della coda, conserva massimo 3 giorni di rilevazioni
+                while (listaLocale.size()>1000)
+                {
+                    listaLocale.pop_back();
+                }
+                
 	}
 }
