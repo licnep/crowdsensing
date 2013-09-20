@@ -9,9 +9,9 @@
 class CurlWrapper
 {
 public:
-    CurlWrapper();
+    CurlWrapper(std::string username, std::string password);
     ~CurlWrapper();
-    std::string sendMessage(int method,std::string APIendpoint,std::string message = std::string());
+    std::string sendMessage(int method,std::string APIendpoint,std::string message = std::string(),bool digest_authenticate = false);
     
     void digestAuthenticate(std::string username, std::string password,std::string APIendpoint);
     
@@ -31,5 +31,7 @@ private:
     
     CURL *curl;
     CURLcode res; //used to store curl results
+    
+    std::string username, password;
 };
 

@@ -1,9 +1,11 @@
 #include "CurlWrapper.h"
 
 
-CurlWrapper::CurlWrapper(void)
+CurlWrapper::CurlWrapper(std::string username, std::string password)
 {
-	curl = curl_easy_init();
+    this->username = username;
+    this->password = password;
+    curl = curl_easy_init();
 }
 
 
@@ -19,7 +21,7 @@ CurlWrapper::~CurlWrapper(void)
     * @param message     [optional] only for POST requests
     * @return the string returned from the server
     */
-std::string CurlWrapper::sendMessage(int method,std::string APIendpoint,std::string message)
+std::string CurlWrapper::sendMessage(int method,std::string APIendpoint,std::string message,bool digest_authenticate)
 {        
     if (method!=GET&&method!=POST)
     {
@@ -40,6 +42,12 @@ std::string CurlWrapper::sendMessage(int method,std::string APIendpoint,std::str
     memoryOutput.size = 0;
         
     curl_easy_reset(curl); //reset all options
+    if (digest_authenticate) 
+    {
+        curl_easy_setopt(curl, CURLOPT_USERNAME, username.c_str());
+        curl_easy_setopt(curl, CURLOPT_PASSWORD, password.c_str());
+        curl_easy_setopt(curl, CURLOPT_HTTPAUTH, CURLAUTH_BASIC|CURLAUTH_DIGEST);
+    }
     curl_easy_setopt(curl,CURLOPT_URL, APIendpoint.c_str() );
     curl_easy_setopt(curl,CURLOPT_WRITEFUNCTION,CurlWrapper::CurlWriteMemoryCallback);
     curl_easy_setopt(curl,CURLOPT_WRITEDATA,&memoryOutput); //the extra data to pass to WRITEFUNCTION (it's our allocated memory where we're writing the message bit by bit)

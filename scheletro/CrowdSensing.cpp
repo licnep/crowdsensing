@@ -6,12 +6,13 @@
 /**
  * By default it uses the test API endpoint. Call setDeployment() to use the deployment endpoint
  */
-CrowdSensing::CrowdSensing(std::string  raspb_wifi_mac,std::string  username, std::string  password) : cw() //initialize the curl wrapper
+CrowdSensing::CrowdSensing(std::string  raspb_wifi_mac,std::string  username, std::string  password,bool deployment) : cw(username,password) //initialize the curl wrapper
 {
     this->raspb_wifi_mac = raspb_wifi_mac;
     this->username = username;
     this->password = password;
-    baseURL = "http://crowdsensing.ismb.it/SC/rest/test-apis";
+    if (deployment) baseURL = baseURL = "http://crowdsensing.ismb.it/SC/rest/apis";
+    else baseURL = "http://crowdsensing.ismb.it/SC/rest/test-apis";
 
     //return a warning if API version has been changed
     checkAPIVersion();
@@ -24,11 +25,6 @@ CrowdSensing::CrowdSensing(std::string  raspb_wifi_mac,std::string  username, st
         //the device hasn't been registered yet.
         addDevice();
     }
-}
-
-void CrowdSensing::setDeployment()
-{
-    baseURL = "http://crowdsensing.ismb.it/SC/rest/apis";
 }
 
 void CrowdSensing::checkAPIVersion() 
@@ -109,7 +105,7 @@ void CrowdSensing::getDeviceInfo(std::string  MACaddress)
 void CrowdSensing::addDevice()
 {
     std::string  json = "{\"username\":\""+username+"\",\"raspb_wifi_mac\":\""+raspb_wifi_mac+"\"}";
-    std::string  result = cw.sendMessage(CurlWrapper::POST,baseURL + std::string("/devices"),json);
+    std::string  result = cw.sendMessage(CurlWrapper::POST,baseURL + std::string("/devices"),json,true);
     printf("[Add Device]: %s\n",result.c_str());
 
     //if a device with this mac already exists, returns "InvalidPostException: Posting new Device with [mac=00:11:22:33:9d:fe] but it is already there ! - use put to modify"
@@ -136,7 +132,7 @@ void CrowdSensing::addFeed(int local_feed_id, std::string  tags = "")
     //update feeds remotely
     std::stringstream json;
     json << "{\"tags\":\"" << tags << "\",\"local_feed_id\":" << local_feed_id << "}";
-    std::string  result = cw.sendMessage(CurlWrapper::POST,baseURL + "/devices/"+raspb_wifi_mac+"/feeds",json.str());
+    std::string  result = cw.sendMessage(CurlWrapper::POST,baseURL + "/devices/"+raspb_wifi_mac+"/feeds",json.str(),true);
     printf("[Add Feed]: %s\n",result.c_str());
 }
 
@@ -253,7 +249,7 @@ int CrowdSensing::inviaRilevazioni(std::list<SensorReading> &lista)
     
     // std::cout << json.str();
     
-    std::string  result = cw.sendMessage(CurlWrapper::POST,baseURL + "/device/" +raspb_wifi_mac + "/posts",json.str().c_str());
+    std::string  result = cw.sendMessage(CurlWrapper::POST,baseURL + "/device/" +raspb_wifi_mac + "/posts",json.str().c_str(),true);
     //printf("[Sensor Post]:%s\n",result.c_str());
     
     //se inviato con successo svuoto la lista

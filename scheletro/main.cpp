@@ -121,8 +121,7 @@ void threadComunicazioneServer()
 	list<list<SensorReading>> listaLocale;
         
         //inizializzazione CrowdSensing
-        CrowdSensing cs("80:1f:02:87:82:84","gruppo35","password");
-        cs.setDeployment(); //ATTENZIONE! cosi' inviamo alla versione deplyment, non a quella test
+        CrowdSensing cs("80:1f:02:87:82:84","gruppo35","034FpK69l4",true); //true significa che comunichiamo con la versione non test
         
         Sensor s_polveri(01,"mg/m^3"), s_temp(02,"Celsius"), s_umidita(03,"%"), temp_rasp(11,"Celsius"), umidita_rasp(12,"%");
         cs.addFeed(11,"raspberry internal temperature");
