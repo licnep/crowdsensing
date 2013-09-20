@@ -52,6 +52,7 @@ std::string CurlWrapper::sendMessage(int method,std::string APIendpoint,std::str
     curl_easy_setopt(curl,CURLOPT_WRITEFUNCTION,CurlWrapper::CurlWriteMemoryCallback);
     curl_easy_setopt(curl,CURLOPT_WRITEDATA,&memoryOutput); //the extra data to pass to WRITEFUNCTION (it's our allocated memory where we're writing the message bit by bit)
     curl_easy_setopt(curl,CURLOPT_TIMEOUT, 60);
+    curl_easy_setopt(curl, CURLOPT_IPRESOLVE, CURL_IPRESOLVE_V4 );
     
     if (method==POST)
     {

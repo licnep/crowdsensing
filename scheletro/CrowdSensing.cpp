@@ -61,14 +61,7 @@ return info;
 }
 
 void CrowdSensing::getLocation(){
-/*------
-    position["kind"] = "latitude#location";
-    position["timestampMs"] = "1374105807337";
-    position["latitude"] = (double)45.4626922; //ivrea, via miniere
-    position["longitude"] = (double)7.87265;
-    position["accuracy"] = 71;
-    position["height_meters"] = 0;
------*/
+
 int level=0;
 char buffer[128];
 std::stringstream json;    
@@ -122,7 +115,9 @@ json << "[";
 "  }"
 " ]";
 
-    std::string  sresult = cw.sendMessage(CurlWrapper::POST,baseURL + "/device/" +raspb_wifi_mac + "/geolocate",jsonTEST, true);
+//    std::string  sresult = cw.sendMessage(CurlWrapper::POST,baseURL + "/device/" +raspb_wifi_mac + "/geolocate",jsonTEST, true);
+        std::string  sresult = cw.sendMessage(CurlWrapper::POST,baseURL + "/device/" +raspb_wifi_mac + "/geolocate",jsonTEST, true);
+
     printf("[Sensor Location Post]:%s\n\n",sresult.c_str());
 
     Json::Reader reader;
@@ -297,65 +292,6 @@ void CrowdSensing::updateLocalFeed(int local_feed_id, double average, double var
     local_feeds[local_feed_id].lastUpdated = getCurrentDateUTC();
 }
 
-void CrowdSensing::sensorPost()
-{
-    //see http://crowdsensing.ismb.it/SC/rest/examples/sensor_post.html  for the format
-    Json::StyledWriter writer;
-    Json::Value root; //root json element
-    root["send_timestamp"] = getCurrentDateUTC();
-    //populate the "sensor_values" array with all our feeds
-    for (std::map<int,feed>::iterator i = local_feeds.begin(); i!=local_feeds.end();i++)
-    {
-        //calculate the average and variance
-        //calculateAvgAndVariance(i->second.local_feed_id);
-
-        Json::Value sensor_values;
-        feed *f = &i->second;
-        sensor_values["value_timestamp"] = f->lastUpdated;
-        sensor_values["average_value"] = f->average;
-        sensor_values["local_feed_id"] = f->local_feed_id;
-        sensor_values["variance"] = f->variance;
-        sensor_values["units_of_measurement"] = f->units;
-        root["sensor_values"].append(sensor_values);
-    }
-    //cout << writer.write(root);
-    std::stringstream json;
-    json << writer.write(root);
-    
-    std::cout << json.str();
-    return;
-
-    /*json << 
-            "{"
-                "\"send_timestamp\": \"" << getCurrentDateUTC() << "\"," //e' necessario
-//                    "\"position\": {" //must be hardcoded
-//                        "\"kind\": \"latitude#location\","
-//                        "\"timestampMs\": \"1274057512199\","
-//                        "\"latitude\": 37.3860517,"
-//                        "\"longitude\": -122.0838511,"
-//                        "\"accuracy\": 5000,"
-//                        "\"height_meters\": 0"
-//                    "},"
-                "\"sensor_values\": [";
-
-    for (map<int,feed>::iterator i = local_feeds.begin(); i!=local_feeds.end();i++)
-    {
-        feed f = i->second;
-        json << "{"
-            "\"value_timestamp\": \"" << f.lastUpdated << "\","
-                "\"average_value\": " << f.average << ","
-                "\"local_feed_id\": " << f.local_feed_id << ","
-                "\"variance\": " << f.variance << ","
-                "\"units_of_measurement\": \"" << f.units << "\""
-            "},";
-    }
-    json << "]}";
-    cout << json.str();
-    */
-    std::string  result = cw.sendMessage(CurlWrapper::POST,baseURL + "/device/" +raspb_wifi_mac + "/posts",json.str().c_str());
-    printf("[Sensor Post]:%s\n",result.c_str());
-}
-
 /**
  * Prova a inviare la lista di rilevazioni, se ha successo svuota la lista
  * @param lista
@@ -428,17 +364,6 @@ int CrowdSensing::inviaRilevazioni(std::list<SensorReading> &lista)
         std::cout << CrowdSensing::getCurrentDateUTC() << " Errore nell'invio, riprovo dopo." << std::endl;
     }
     return 0;
-}
-
-void CrowdSensing::authorize(std::string  group_id, std::string  password)
-{
-    cw.digestAuthenticate(group_id,password,baseURL + "/auth/"+group_id);
-}
-
-void CrowdSensing::checkAuthorization(std::string  username)
-{
-    std::string  result = cw.sendMessage(CurlWrapper::GET,baseURL + "/auth/"+ username);
-    printf("\nAUTHORIZATION:\n%s",result.c_str());
 }
 
 std::map<int,feed> CrowdSensing::get_local_feeds() 

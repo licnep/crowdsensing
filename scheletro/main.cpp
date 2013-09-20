@@ -12,8 +12,6 @@
 #include <stdio.h>
 #include <libusb-1.0/libusb.h>
 
-#define SIMULATION false
-
 void threadComunicazioneServer(); //definito piu' in basso
 
 using namespace std;
@@ -24,54 +22,54 @@ std::mutex mutexLettureDaInviare;
 std::condition_variable ciSonoLettureDaInviare;
 
 int main(int argc, char* argv[]) {
+    
+    CrowdSensing cs("80:1f:02:87:82:84","gruppo35","034FpK69l4",true); //true significa che comunichiamo con la versione non test
+    
+    return 0;
+    
+    
 	Sensor s_polveri(01,"mg/m^3"), s_temp(02,"Celsius"), s_umidita(03,"%"), temp_rasp(11,"Celsius"), umidita_rasp(12,"%");
 	
 	cout << "Crowdsensing v0.0" << endl;
         
-        SensoreUSB sensoreUSB;
-        sensoreUSB.init();
-        
-        SensoreI2C sensoreInterno;
-        unsigned int umiditaInterna, temperaturaInterna, cicliDaUltimaRichiestaTemp = 0;
+    //Inizializzazione sensore USB
+    SensoreUSB sensoreUSB;
+    sensoreUSB.init();
+    
+    //Inizializzazione sensore I2C
+    SensoreI2C sensoreInterno;
+    //la variabile cicliDaUltimaRichiestaTemp e' usata perche' la temperatura non la richiediamo ad ogni ciclo
+    unsigned int umiditaInterna, temperaturaInterna, cicliDaUltimaRichiestaTemp = 0;
 
-        if (!SIMULATION)
-        {
-            //Inizializzazione I2C
-            int error = sensoreInterno.init();
-            if (error!=0) 
-            {	
-                    cout << "Errore inizializzazione i2c. Uscita forzata." << endl;
-                    exit(1);
-            }
-        }
+    int error = sensoreInterno.init();
+    if (error!=0) 
+    {	
+            cout << "Errore inizializzazione i2c. Uscita forzata." << endl;
+            exit(1);
+    }
             
 	//avvio il thread di comunicazione col server
 	std::thread thread2(threadComunicazioneServer);
 
+	//variabile in cui memorizzo il timestamp dell'ultimo invio, quando sono passati 5 minuti dall'ultimo invio faccio un nuovo invio
 	auto ultimoSalvataggio = std::chrono::system_clock::now();
+
 	while(1) //while dell'USB (ogni 8ms)
 	{
-		//simuliamo l'attesa di 8ms, in produzione e' il codice bloccante dell'usb che ci fa aspettare
-		if(SIMULATION) std::this_thread::sleep_for( std::chrono::milliseconds( 10 ) );
-                else {
-                    //r = libusb_interrupt_transfer(dev_handle,ep , data, 6, &actual, 0);
-                    sensoreUSB.interruptTransfer();
-                }
+        //funzione bloccante (attesa di 8ms)
+        sensoreUSB.interruptTransfer();
                 
-                s_polveri.aggiungiMisura(sensoreUSB.getDust());
-                s_temp.aggiungiMisura(sensoreUSB.getTemp());
-                s_umidita.aggiungiMisura(sensoreUSB.getHum());
-                
-                //FINE LETTURA USB
+        s_polveri.aggiungiMisura(sensoreUSB.getDust());
+        s_temp.aggiungiMisura(sensoreUSB.getTemp());
+        s_umidita.aggiungiMisura(sensoreUSB.getHum());
+        
+        //FINE LETTURA USB
 
 		cicliDaUltimaRichiestaTemp++;
 		if (cicliDaUltimaRichiestaTemp >5)
 		{
-                        int result = sensoreInterno.humidity_and_temperature_data_fetch(&umiditaInterna,&temperaturaInterna);
-                        if (SIMULATION) {
-                            umiditaInterna = 50;temperaturaInterna = 100;
-                        }
-			if (result==0||SIMULATION) 	//misura andata a buon fine, no stale data o altro
+            int result = sensoreInterno.humidity_and_temperature_data_fetch(&umiditaInterna,&temperaturaInterna);
+			if (result==0) 	//misura andata a buon fine, no stale data o altro
 			{
 				temp_rasp.aggiungiMisura(temperaturaInterna*165.0/16382 - 40);
 				umidita_rasp.aggiungiMisura(umiditaInterna*100.0/16382);
