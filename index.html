@@ -10,7 +10,7 @@
 var chart;
 var chartData = [];
 var chartCursor;
-var baseURL = "http://crowdsensing.ismb.it/SC/rest/test-apis";
+var baseURL = (getUrlVars()["api"]=="deployment") ? "http://crowdsensing.ismb.it/SC/rest/apis" : "http://crowdsensing.ismb.it/SC/rest/test-apis";
 var unita = "unita";
 
 // generate some random data, quite different range
@@ -75,12 +75,18 @@ function getUrlVars() {
 }
 
 //"main":
-if(getUrlVars()["mac"]==undefined) {
+if(getUrlVars()["api"]==undefined) {
+	$("body").append("<b>Seleziona l'endpoint API:</b>");
+	$("body").append("<ul>");
+	$("body").append("<li><a href=\"index.html?api=test\">test</a></li>");
+	$("body").append("<li><a href=\"index.html?api=deployment\">deployment</a></li>");
+	$("body").append("</ul>");
+} else if(getUrlVars()["mac"]==undefined) {
 	$("body").append("<b>Seleziona un device:</b>");
 	$.getJSON("./proxy.php?url="+baseURL+"/devices",function(data) {
 		$("body").append("<ul>");
 		data.forEach(function(device) {
-			$("body").append("<li><a href=\"index.html?mac="+device.raspb_wifi_mac+"\">"+device.username+" ("+device.raspb_wifi_mac+")</a></li>");
+			$("body").append("<li><a href=\""+window.location.href+"&mac="+device.raspb_wifi_mac+"\">"+device.username+" ("+device.raspb_wifi_mac+")</a></li>");
 		});
 		$("body").append("</ul>");
 	});
@@ -96,7 +102,7 @@ if(getUrlVars()["mac"]==undefined) {
 } else {
 	// create chart
 	AmCharts.ready(function() {
-		$.getJSON("./proxy.php?url=http://crowdsensing.ismb.it/SC/rest/test-apis/device/b8:27:eb:69:a4:20/posts",function(data) {
+		$.getJSON("./proxy.php?url="+baseURL+"/device/"+getUrlVars()["mac"]+"/posts",function(data) {
 			updateChartData(data);
 			// SERIAL CHART    
 			chart = new AmCharts.AmSerialChart();
