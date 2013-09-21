@@ -24,7 +24,8 @@ std::condition_variable ciSonoLettureDaInviare;
 int main(int argc, char* argv[]) {
     
     CrowdSensing cs("80:1f:02:87:82:84","gruppo35","034FpK69l4",true); //true significa che comunichiamo con la versione non test
-    
+    cs.getLocation();
+
     return 0;
     
     
@@ -122,6 +123,18 @@ void threadComunicazioneServer()
         
     //inizializzazione CrowdSensing
     CrowdSensing cs("80:1f:02:87:82:84","gruppo35","034FpK69l4",true); //true significa che comunichiamo con la versione non test
+
+    cs.checkAPIVersion();
+    cs.getLocation();
+
+    //try to register this device if it isn't registered already
+    int device_id = cs.getDeviceIDFromMac("80:1f:02:87:82:84");
+    if (device_id==-1)
+    {
+        //the device hasn't been registered yet.
+        fprintf(stderr,"Can't find a device on server side with this mac. Creating one...\n");
+        cs.addDevice();
+    }
     
     //sul lato server creo, e non esistono ancora, i feed corrispondenti ai sensori
     cs.addFeed(11,"raspberry internal temperature");

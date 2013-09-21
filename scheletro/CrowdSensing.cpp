@@ -1,6 +1,7 @@
 #include <list>
 #include <chrono>
 #include <iwlib.h>
+#include <stdexcept>
 #include "CrowdSensing.h"
 
 /**
@@ -13,21 +14,6 @@ CrowdSensing::CrowdSensing(std::string  raspb_wifi_mac,std::string  username, st
     this->password = password;
     if (deployment) baseURL = baseURL = "http://crowdsensing.ismb.it/SC/rest/apis";
     else baseURL = "http://crowdsensing.ismb.it/SC/rest/test-apis";
-
-    //return a warning if API version has been changed
-    checkAPIVersion();
-	
-    //send a geolocation API request to find out my position (stored as the json value "position")
-    getLocation();
-
-    //try to register this device if it isn't registered already
-    int device_id = getDeviceIDFromMac(this->raspb_wifi_mac);
-    if (device_id==-1)
-    {
-        //the device hasn't been registered yet.
-        fprintf(stderr,"Can't find a device on server side with mac:%s - Creating one...\n",raspb_wifi_mac.c_str());
-        addDevice();
-    }
 }
 
 //TO DO: vedere se è possibile ottenere la lista delle interfacce attive, così da selezionare dinamicamente quella giusta
@@ -43,15 +29,17 @@ apinfo CrowdSensing::getAPList(){
     /* Open socket to kernel */
     sock = iw_sockets_open();
 
+    std::string interface = "wlan0";
+
     /* Get some metadata to use for scanning */
-    if (iw_get_range_info(sock, "wlan0", &(info.range)) < 0) {
+    if (iw_get_range_info(sock, interface.c_str(), &(info.range)) < 0) {
         //TO DO: qui fare un blocco try-catch e gestire l'errore
         printf("Error during iw_get_range_info. Aborting.\n");
         exit(2);
     }
 
   /* Perform the scan */
-    if (iw_scan(sock, "wlan0", info.range.we_version_compiled, &(info.head)) < 0) {
+    if (iw_scan(sock, const_cast<char*>(interface.c_str()), info.range.we_version_compiled, &(info.head)) < 0) {
         //TO DO: qui fare un blocco try-catch e gestire l'errore
         printf("Error during iw_scan. Aborting.\n");
         exit(2);
@@ -69,8 +57,8 @@ void CrowdSensing::getLocation(){
     apinfo info=getAPList();
     wireless_scan *result=info.head.result;
 
-    //json << "{\"wifiAccessPoints\": [";
-    json << "[";
+    json << "{\"wifiAccessPoints\": [";
+    //json << "[";
     while (NULL != result) {
     	
         level = result->stats.qual.level;
@@ -93,63 +81,51 @@ void CrowdSensing::getLocation(){
         json << ",";
     }
 
-    json << "]";
+    json << "]}";
     std::cout << json.str() << "\n\n";
 
-	std::string jsonTEST = "[{"
-"   \"macAddress\": \"00:19:E0:6D:C1:DE\""
-"  }"
-"  ,{"
-"   \"macAddress\": \"00:24:89:9C:2D:16\""
-"  },"
-"  {"
-"   \"macAddress\": \"00:21:96:5E:A7:BC\""
-"  }"
-"  ,{"
-"   \"macAddress\": \"A4:52:6F:23:AD:56\""
-"  },"
-"  {"
-"   \"macAddress\": \"20:C9:D0:AC:7B:6E\""
-"  }"
-"  ,{"
-"   \"macAddress\": \"00:1E:2A:F6:BC:04 \""
-"  }"
-" ]";
-
-    std::string  sresult = cw.sendMessage(CurlWrapper::POST,baseURL + "/device/" +raspb_wifi_mac + "/geolocate",json.str(), true);
+    //std::string  sresult = cw.sendMessage(CurlWrapper::POST,baseURL + "/device/" +raspb_wifi_mac + "/geolocate",json.str(), true);
     //std::string  sresult = cw.sendMessage(CurlWrapper::POST,"https://www.googleapis.com/geolocation/v1/geolocate?key=AIzaSyC8i79TqtQm9gAbFngp4TsfH7JLr6NMOLE",json.str(), true);
+    std::string  sresult = cw.sendMessage(CurlWrapper::POST,"http://jonjonson.com/crowdsensing/proxy.php?url=https://www.googleapis.com/geolocation/v1/geolocate?key=AIzaSyBlab35Z_3d-2p41w2uhWfzwPpLPi0zjlY",json.str(), true);
 
-    printf("[Sensor Location Post]:%s\n\n",sresult.c_str());
+    printf("[Risposta API geolocalizzazione]:%s\n\n",sresult.c_str());
 
     Json::Reader reader;
     Json::Value root;
     bool parsingSuccessful = reader.parse( sresult, root );
     if ( parsingSuccessful )
     {
-        printf("PARSING SUCCESSFULL\n");
-        //TO DO: qui interpreto la risposta e riempio l'array associativo position 
         this->position["kind"] = "latitude#location";
         try
         {
+            /*
             this->position["timestampMs"] = root["timestampMs"].asString();
             this->position["latitude"] = root["latitude"].asDouble();
             this->position["longitude"] = root["longitude"].asDouble();
             this->position["accuracy"] = root["accuracy"].asInt();       
+            this->position["height_meters"] = 0;*/
+
+            //la risposta dell'api google e' diversa quindi il parsing da fare e' leggermente diverso:
+            this->position["timestampMs"] = root["timestampMs"].asString();
+            this->position["latitude"] = root["location"]["lat"].asDouble();
+            this->position["longitude"] = root["location"]["lng"].asDouble();
+            this->position["accuracy"] = root["accuracy"].asDouble();       
             this->position["height_meters"] = 0;
             std::cout << this->position;
+
+            if (position["accuracy"]==0) throw std::runtime_error("Accuracy=0, errore nella geolocalizzazione");
+
+            //non ci sono stati errori, return. Altrimenti fallback verso la location scritta a mano piu' in basso
             return;
         }
         catch(std::exception& e) 
         {
-            printf("Exception while parsing location.\n");
+            printf("Exception while parsing location.\nMessage: %s\n",e.what());
         }
     }
 
-    fprintf( stderr,"%s \nUsing hardcoded location. \n",sresult.c_str() );
+    fprintf( stderr,"Using hardcoded location.\n" );
     
-    //se sono qui non e' riuscito a fare il parsing o non ha ricevuto risposta
-    //imposto una posizione standard hardcoded
-
     //per latitudine e longitudine usato http://diveintohtml5.info/geolocation.html
     this->position["kind"] = "latitude#location";
     this->position["timestampMs"] = "1374105807337";
