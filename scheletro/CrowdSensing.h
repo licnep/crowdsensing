@@ -41,7 +41,6 @@ public:
     void addDevice();
     std::string  listFeeds();
     void addFeed(int local_feed_id, std::string  tags);
-    void updateLocalFeed(int local_feed_id, double average, double variance, std::string  units);
     std::map<int,feed> get_local_feeds();
     
     int inviaRilevazioni(std::list<SensorReading> &lista);

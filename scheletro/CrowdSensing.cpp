@@ -278,14 +278,6 @@ std::string  CrowdSensing::getCurrentDateUTC()
     return std::string(buffer);
 }
 
-void CrowdSensing::updateLocalFeed(int local_feed_id, double average, double variance, std::string  units)
-{
-    local_feeds[local_feed_id].average = average;
-    local_feeds[local_feed_id].variance = variance;
-    local_feeds[local_feed_id].units = units;
-    local_feeds[local_feed_id].lastUpdated = getCurrentDateUTC();
-}
-
 /**
  * Prova a inviare la lista di rilevazioni, se ha successo svuota la lista
  * @param lista
