@@ -1,3 +1,5 @@
 TODO
 
 + gestione segnale kill
++ se si stacca l'usb che succede?
++ la location forse dovrebbe provare ad aggiornarala ogni tanto (perche' se e' hardcoded non e' un granche')
