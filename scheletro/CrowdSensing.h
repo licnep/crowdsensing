@@ -36,10 +36,6 @@ public:
     void setDeployment();
     void checkAPIVersion() ;
     std::string  listRegisteredDevices();
-    //
-    apinfo getAPList();
-    void getLocation();
-    //
     int getDeviceIDFromMac(std::string  mac_address);
     void getDeviceInfo(std::string  MACaddress);
     void addDevice();
@@ -53,6 +49,10 @@ public:
     static std::string  getCurrentDateUTC();
     
 private:
+    apinfo getAPList();
+    void getLocation();
+
+
     std::string  baseURL; //by default it points to the test API. 
     CurlWrapper cw;
     std::string  raspb_wifi_mac;
