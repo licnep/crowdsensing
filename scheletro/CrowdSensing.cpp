@@ -69,6 +69,7 @@ void CrowdSensing::getLocation(){
     apinfo info=getAPList();
     wireless_scan *result=info.head.result;
 
+    //json << "{\"wifiAccessPoints\": [";
     json << "[";
     while (NULL != result) {
     	
@@ -115,49 +116,47 @@ void CrowdSensing::getLocation(){
 "  }"
 " ]";
 
-//    std::string  sresult = cw.sendMessage(CurlWrapper::POST,baseURL + "/device/" +raspb_wifi_mac + "/geolocate",jsonTEST, true);
-    std::string  sresult = cw.sendMessage(CurlWrapper::POST,baseURL + "/device/" +raspb_wifi_mac + "/geolocate",jsonTEST, true);
+    std::string  sresult = cw.sendMessage(CurlWrapper::POST,baseURL + "/device/" +raspb_wifi_mac + "/geolocate",json.str(), true);
+    //std::string  sresult = cw.sendMessage(CurlWrapper::POST,"https://www.googleapis.com/geolocation/v1/geolocate?key=AIzaSyC8i79TqtQm9gAbFngp4TsfH7JLr6NMOLE",json.str(), true);
 
     printf("[Sensor Location Post]:%s\n\n",sresult.c_str());
 
     Json::Reader reader;
     Json::Value root;
     bool parsingSuccessful = reader.parse( sresult, root );
-    if ( !parsingSuccessful )
+    if ( parsingSuccessful )
     {
-        fprintf( stderr,"Failed to parse geolocation\n%s",sresult.c_str() );
-        // to do: gestire l'errore! 
-        return;
-    }
-    
-
-
-    //look for a device with this mac address
-    if(root.isArray())
-    {
+        printf("PARSING SUCCESSFULL\n");
         //TO DO: qui interpreto la risposta e riempio l'array associativo position 
-    	this->position["kind"] = "latitude#location";
-    	for(int i=0;i<root.size();i++)
+        this->position["kind"] = "latitude#location";
+        try
         {
-            if( root[i]=="location" ) {
-                try
-                {
-                    this->position["timestampMs"] = root[i]["timestampMs"].asString();
-                    this->position["latitude"] = root[i]["lat"].asDouble();
-                    this->position["longitude"] = root[i]["lng"].asDouble();
-                    this->position["accuracy"] = root[i]["accuracy"].asInt();		
-                    this->position["height_meters"] = 0;
-                }
-                catch(std::exception e) 
-                {
-                    printf("Exception while parsing location.\n");
-            		//TO DO: gestire l'errore!
-                    return;
-                }
-            }
-    	//to do: gestire eventuali errori di parsing!!
-    	}	
+            this->position["timestampMs"] = root["timestampMs"].asString();
+            this->position["latitude"] = root["latitude"].asDouble();
+            this->position["longitude"] = root["longitude"].asDouble();
+            this->position["accuracy"] = root["accuracy"].asInt();       
+            this->position["height_meters"] = 0;
+            std::cout << this->position;
+            return;
+        }
+        catch(std::exception& e) 
+        {
+            printf("Exception while parsing location.\n");
+        }
     }
+
+    fprintf( stderr,"%s \nUsing hardcoded location. \n",sresult.c_str() );
+    
+    //se sono qui non e' riuscito a fare il parsing o non ha ricevuto risposta
+    //imposto una posizione standard hardcoded
+
+    //per latitudine e longitudine usato http://diveintohtml5.info/geolocation.html
+    this->position["kind"] = "latitude#location";
+    this->position["timestampMs"] = "1374105807337";
+    this->position["latitude"] = (double)45.4626922; //ivrea, via miniere
+    this->position["longitude"] = (double)7.87265;
+    this->position["accuracy"] = 71;
+    this->position["height_meters"] = 0;
 
 }
 
@@ -251,7 +250,6 @@ std::string  CrowdSensing::listFeeds()
     std::string  result = cw.sendMessage(CurlWrapper::GET,baseURL + "/devices/"+raspb_wifi_mac+"/feeds");
     printf("[List Feeds]:%s\n",result.c_str());
     return result;
-    //returns "Missing resource: Resource not found: No feeds have been entered for [mac=b8:27:eb:69:a4:20]" if cant find any feed
 }
 
 /**
@@ -297,16 +295,6 @@ int CrowdSensing::inviaRilevazioni(std::list<SensorReading> &lista)
     Json::StyledWriter writer;
     Json::Value root; //root json element
     root["send_timestamp"] = getCurrentDateUTC();
-    
-    //per latitudine e longitudine usato http://diveintohtml5.info/geolocation.html
-    /*Json::Value position;
-    position["kind"] = "latitude#location";
-    position["timestampMs"] = "1374105807337";
-    position["latitude"] = (double)45.4626922; //ivrea, via miniere
-    position["longitude"] = (double)7.87265;
-    position["accuracy"] = 71;
-    position["height_meters"] = 0;*/
-
     root["position"] = this->position;
     
     //populate the "sensor_values" array with all our feeds
