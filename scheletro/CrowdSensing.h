@@ -33,7 +33,6 @@ class CrowdSensing
 {
 public:
     CrowdSensing(std::string  raspb_wifi_mac,std::string  username, std::string  password,bool deployment=false);
-    void setDeployment();
     void checkAPIVersion() ;
     std::string  listRegisteredDevices();
     int getDeviceIDFromMac(std::string  mac_address);
