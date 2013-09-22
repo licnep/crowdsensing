@@ -109,11 +109,14 @@ void CrowdSensing::getLocation(){
             this->position["timestampMs"] = root["timestampMs"].asString();
             this->position["latitude"] = root["location"]["lat"].asDouble();
             this->position["longitude"] = root["location"]["lng"].asDouble();
-            this->position["accuracy"] = root["accuracy"].asDouble();       
+            this->position["accuracy"] = root["accuracy"].asDouble();
             this->position["height_meters"] = 0;
             std::cout << this->position;
 
-            if (position["accuracy"]==0) throw std::runtime_error("Accuracy=0, errore nella geolocalizzazione");
+            if (position["accuracy"]==0.0) 
+            {
+                throw std::runtime_error("Accuracy=0, errore nella geolocalizzazione");   
+            }
 
             //non ci sono stati errori, return. Altrimenti fallback verso la location scritta a mano piu' in basso
             return;
@@ -137,21 +140,75 @@ void CrowdSensing::getLocation(){
 }
 
 
+
+/**
+ * Prova a inviare la lista di rilevazioni, se ha successo svuota la lista
+ * @param lista
+ */
+int CrowdSensing::inviaRilevazioni(std::list<SensorReading> &lista)
+{
+    Json::StyledWriter writer;
+    Json::Value root;
+    root["send_timestamp"] = getCurrentDateUTC();
+    root["position"] = this->position;
+    
+    //populate the "sensor_values" array with all our feeds
+    for ( std::list<SensorReading>::iterator i = lista.begin(); i!=lista.end(); i++ )
+    {
+        Json::Value sensor_values;
+        sensor_values["value_timestamp"] = i->timestamp;
+        sensor_values["average_value"] = i->average;
+        sensor_values["local_feed_id"] = i->local_feed_id;
+        sensor_values["variance"] = i->variance;
+        sensor_values["units_of_measurement"] = i->units;
+        root["sensor_values"].append(sensor_values);
+    }
+    std::stringstream json;
+    json << writer.write(root);
+    std::string  result = cw.sendMessage(CurlWrapper::POST,baseURL + "/device/" +raspb_wifi_mac + "/posts",json.str().c_str(),true);
+    
+    //se inviato con successo svuoto la lista
+    if (result.compare("")!=0) 
+    {
+        std::cout << getCurrentDateUTC() << "RISPOSTA: " << result.c_str() << std::endl;
+        //se tutto e' andato bene il server risponde con lo stesso json che gli e' stato inviato
+        //facciamo il parsing per verificare
+        Json::Value rootReply;
+        Json::Reader reader;
+        bool parsingSuccessful = reader.parse( result, rootReply );
+        if ( !parsingSuccessful )
+        {       
+            // report to the user the failure and their locations in the document.
+            std::cout << getCurrentDateUTC() << " Failed to parse json response: \n" << reader.getFormattedErrorMessages();
+            return 0;
+        } 
+        else {
+            if (rootReply["raspb_wifi_mac"].asString().compare(raspb_wifi_mac)==0) 
+            {
+                std::cout << "il mac della risposta corrisponde!!!!\n" ;
+                lista.clear();
+                return 1;
+            } 
+            else {
+                std::cout << "mac DIVERSI :(\n" ;
+                return 0;
+            }
+        }
+    } else {
+        std::cout << CrowdSensing::getCurrentDateUTC() << " Errore nell'invio, riprovo dopo." << std::endl;
+    }
+    return 0;
+}
+
+
 void CrowdSensing::checkAPIVersion() 
 {
     std::string  result = cw.sendMessage(CurlWrapper::GET,baseURL + "/version");
     printf("[API version]: %s\n",result.c_str());
-    if(result.compare("0.4.9-test")) 
+    if(result.compare("0.4.9-test")&&result.compare("0.4.9"))
     {
         fprintf(stderr,"WARNING: API current version is %s, this program was written for 0.4.9-test, something important may have changed\n",result.c_str());
     }
-}
-
-std::string  CrowdSensing::listRegisteredDevices() 
-{
-    //TODO stub
-    std::string  result = cw.sendMessage(CurlWrapper::GET,baseURL + "/devices");
-    return result;
 }
 
 /**
@@ -207,7 +264,6 @@ int CrowdSensing::getDeviceIDFromMac(std::string  mac_address)
 
 void CrowdSensing::getDeviceInfo(std::string  MACaddress) 
 {
-    //TODO stub
     std::string  result = cw.sendMessage(CurlWrapper::GET,baseURL + std::string("/devices/")+ MACaddress);
     printf("[Device Info]:\n%s",result.c_str());
 }
@@ -217,7 +273,6 @@ void CrowdSensing::addDevice()
     std::string  json = "{\"username\":\""+username+"\",\"raspb_wifi_mac\":\""+raspb_wifi_mac+"\"}";
     std::string  result = cw.sendMessage(CurlWrapper::POST,baseURL + std::string("/devices"),json,true);
     printf("[Add Device]: %s\n",result.c_str());
-
     //if a device with this mac already exists, returns "InvalidPostException: Posting new Device with [mac=00:11:22:33:9d:fe] but it is already there ! - use put to modify"
 }
 
@@ -252,70 +307,6 @@ std::string  CrowdSensing::getCurrentDateUTC()
     //example: 2013-05-28T18:00:06.021+0200  (gmtime converts to UTC (+0000))
     strftime(buffer,sizeof(char)*199,"%Y-%m-%dT%H:%M:%S%z",gmtime(&now));
     return std::string(buffer);
-}
-
-/**
- * Prova a inviare la lista di rilevazioni, se ha successo svuota la lista
- * @param lista
- */
-int CrowdSensing::inviaRilevazioni(std::list<SensorReading> &lista)
-{
-    Json::StyledWriter writer;
-    Json::Value root; //root json element
-    root["send_timestamp"] = getCurrentDateUTC();
-    root["position"] = this->position;
-    
-    //populate the "sensor_values" array with all our feeds
-    for ( std::list<SensorReading>::iterator i = lista.begin(); i!=lista.end(); i++ )
-    {
-        Json::Value sensor_values;
-        sensor_values["value_timestamp"] = i->timestamp;
-        sensor_values["average_value"] = i->average;
-        sensor_values["local_feed_id"] = i->local_feed_id;
-        sensor_values["variance"] = i->variance;
-        sensor_values["units_of_measurement"] = i->units;
-        root["sensor_values"].append(sensor_values);
-    }
-    //cout << writer.write(root);
-    std::stringstream json;
-    json << writer.write(root);
-    
-    // std::cout << json.str();
-    
-    std::string  result = cw.sendMessage(CurlWrapper::POST,baseURL + "/device/" +raspb_wifi_mac + "/posts",json.str().c_str(),true);
-    //printf("[Sensor Post]:%s\n",result.c_str());
-    
-    //se inviato con successo svuoto la lista
-    if (result.compare("")!=0) 
-    {
-        std::cout << getCurrentDateUTC() << "RISPOSTA: " << result.c_str() << std::endl;
-        //se tutto e' andato bene il server risponde con lo stesso json che gli e' stato inviato
-        //facciamo il parsing dello json per verificare
-        Json::Value rootReply;   // will contains the root value after parsing.
-        Json::Reader reader;
-        bool parsingSuccessful = reader.parse( result, rootReply );
-        if ( !parsingSuccessful )
-        {       
-            // report to the user the failure and their locations in the document.
-            std::cout << getCurrentDateUTC() << " Failed to parse json response: \n" << reader.getFormattedErrorMessages();
-            return 0;
-        } 
-        else {
-            if (rootReply["raspb_wifi_mac"].asString().compare(raspb_wifi_mac)==0) 
-            {
-                std::cout << "il mac della risposta corrisponde!!!!\n" ;
-                lista.clear();
-                return 1;
-            } 
-            else {
-                std::cout << "mac DIVERSI :(\n" ;
-                return 0;
-            }
-        }
-    } else {
-        std::cout << CrowdSensing::getCurrentDateUTC() << " Errore nell'invio, riprovo dopo." << std::endl;
-    }
-    return 0;
 }
 
 std::map<int,feed> CrowdSensing::get_local_feeds() 

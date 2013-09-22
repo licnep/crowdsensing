@@ -36,7 +36,6 @@ public:
 
     //metodi che rispecchiano gli API endpoint sul server crowdsensing
     void checkAPIVersion();
-    std::string  listRegisteredDevices();
     void addDevice();
     int getDeviceIDFromMac(std::string  mac_address);
     void getDeviceInfo(std::string  MACaddress);
