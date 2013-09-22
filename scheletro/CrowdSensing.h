@@ -42,6 +42,7 @@ public:
     std::string listFeeds();
     void addFeed(int local_feed_id, std::string  tags);
     std::map<int,feed> get_local_feeds();
+    std::string  listRegisteredDevices();
     
     void getLocation();
     int inviaRilevazioni(std::list<SensorReading> &lista);

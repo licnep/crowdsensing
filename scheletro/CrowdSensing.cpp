@@ -300,6 +300,12 @@ void CrowdSensing::addFeed(int local_feed_id, std::string  tags = "")
     printf("[Add Feed]: %s\n",result.c_str());
 }
 
+std::string  CrowdSensing::listRegisteredDevices() 
+{
+    std::string  result = cw.sendMessage(CurlWrapper::GET,baseURL + "/devices");
+    return result;
+}
+
 std::string  CrowdSensing::getCurrentDateUTC()
 {
     char buffer[200];
