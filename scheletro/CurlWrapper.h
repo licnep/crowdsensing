@@ -27,7 +27,7 @@ private:
         size_t size;
     };
     
-    static size_t CurlWriteMemoryCallback( char *ptr, size_t size, size_t nmemb, memoryStructForCurl *userdata);
+    static size_t CurlWriteMemoryCallback( char *ptr, size_t size, size_t nmemb, std::string *userdata);
     
     CURL *curl;
     CURLcode res; //used to store curl results

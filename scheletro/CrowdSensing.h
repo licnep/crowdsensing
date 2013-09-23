@@ -33,26 +33,26 @@ class CrowdSensing
 {
 public:
     CrowdSensing(std::string  raspb_wifi_mac,std::string  username, std::string  password,bool deployment=false);
-    void setDeployment();
-    void checkAPIVersion() ;
-    std::string  listRegisteredDevices();
-    //
-    apinfo getAPList();
-    void getLocation();
-    //
+
+    //metodi che rispecchiano gli API endpoint sul server crowdsensing
+    void checkAPIVersion();
+    void addDevice();
     int getDeviceIDFromMac(std::string  mac_address);
     void getDeviceInfo(std::string  MACaddress);
-    void addDevice();
-    std::string  listFeeds();
+    std::string listFeeds();
     void addFeed(int local_feed_id, std::string  tags);
-    void updateLocalFeed(int local_feed_id, double average, double variance, std::string  units);
     std::map<int,feed> get_local_feeds();
+    std::string  listRegisteredDevices();
     
+    void getLocation();
     int inviaRilevazioni(std::list<SensorReading> &lista);
     
     static std::string  getCurrentDateUTC();
     
 private:
+    apinfo getAPList();
+
+
     std::string  baseURL; //by default it points to the test API. 
     CurlWrapper cw;
     std::string  raspb_wifi_mac;

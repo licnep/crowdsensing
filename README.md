@@ -18,5 +18,5 @@ Dipendenze:
 
 - libcurl
 - libjsoncpp
-
+- libiw
 
