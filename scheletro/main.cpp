@@ -28,7 +28,7 @@ int main(int argc, char* argv[]) {
 
     return 0;
     
-    
+
 	Sensor s_polveri(01,"mg/m^3"), s_temp(02,"Celsius"), s_umidita(03,"%"), temp_rasp(11,"Celsius"), umidita_rasp(12,"%");
 	
 	cout << "Crowdsensing v0.0" << endl;
@@ -180,3 +180,4 @@ void threadComunicazioneServer()
         }           
 	}
 }
+

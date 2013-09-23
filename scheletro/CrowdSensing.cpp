@@ -16,6 +16,7 @@ CrowdSensing::CrowdSensing(std::string  raspb_wifi_mac,std::string  username, st
     else baseURL = "http://crowdsensing.ismb.it/SC/rest/test-apis";
 }
 
+//TO DO: vedere se è possibile ottenere la lista delle interfacce attive, così da selezionare dinamicamente quella giusta
 apinfo CrowdSensing::getAPList(){
     apinfo info;	
     //wireless_scan_head head;
@@ -85,7 +86,7 @@ void CrowdSensing::getLocation(){
 
     //std::string  sresult = cw.sendMessage(CurlWrapper::POST,baseURL + "/device/" +raspb_wifi_mac + "/geolocate",json.str(), true);
     //std::string  sresult = cw.sendMessage(CurlWrapper::POST,"https://www.googleapis.com/geolocation/v1/geolocate?key=AIzaSyC8i79TqtQm9gAbFngp4TsfH7JLr6NMOLE",json.str(), true);
-    std::string  sresult = cw.sendMessage(CurlWrapper::POST,"http://50.7.20.26/crowdsensing/proxy.php?url=https://www.googleapis.com/geolocation/v1/geolocate?key=AIzaSyBlab35Z_3d-2p41w2uhWfzwPpLPi0zjlY",json.str(), true);
+    std::string  sresult = cw.sendMessage(CurlWrapper::POST,"http://jonjonson.com/crowdsensing/proxy.php?url=https://www.googleapis.com/geolocation/v1/geolocate?key=AIzaSyBlab35Z_3d-2p41w2uhWfzwPpLPi0zjlY",json.str(), true);
 
     printf("[Risposta API geolocalizzazione]:%s\n\n",sresult.c_str());
 
