@@ -136,7 +136,7 @@ void threadComunicazioneServer()
         cs.addDevice();
     }
     
-    //sul lato server creo, e non esistono ancora, i feed corrispondenti ai sensori
+    //sul lato server creo, se non esistono ancora, i feed corrispondenti ai sensori
     cs.addFeed(11,"raspberry internal temperature");
     cs.addFeed(12,"raspberry internal humidity");
     cs.addFeed(01,"external dust");
