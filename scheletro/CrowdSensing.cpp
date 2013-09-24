@@ -16,7 +16,6 @@ CrowdSensing::CrowdSensing(std::string  raspb_wifi_mac,std::string  username, st
     else baseURL = "http://crowdsensing.ismb.it/SC/rest/test-apis";
 }
 
-//TO DO: vedere se è possibile ottenere la lista delle interfacce attive, così da selezionare dinamicamente quella giusta
 apinfo CrowdSensing::getAPList(){
     apinfo info;
     int sock;
@@ -35,7 +34,6 @@ apinfo CrowdSensing::getAPList(){
 
   /* Perform the scan */
     if (iw_scan(sock, const_cast<char*>(interface.c_str()), info.range.we_version_compiled, &(info.head)) < 0) {
-        //TO DO: qui fare un blocco try-catch e gestire l'errore
         std::cerr << "Error during iw_scan. Aborting.\n";
         exit(2);
     }
@@ -48,17 +46,13 @@ void CrowdSensing::getLocation(){
     int level=0;
     char buffer[128];
     std::stringstream json;    
-    //wireless_scan_head *result = getAPList();
     apinfo info=getAPList();
     wireless_scan *result=info.head.result;
 
     json << "{\"wifiAccessPoints\": [";
-    //json << "[";
     while (NULL != result) {
     	
-        level = result->stats.qual.level;
-        
-        //se il livello>64 toglie 256...non ho capito ancora perchè ma funge
+        level = result->stats.qual.level;        
         if(level >= 64){
             level -= 0x100;
         }
@@ -68,8 +62,7 @@ void CrowdSensing::getLocation(){
                     "\"age\":0,"
                     "\"channel\":"<< iw_freq_to_channel(result->b.freq,&(info.range))  << ","
                     "\"signalToNoiseRatio\":" << (int)result->stats.qual.qual  << "}";	
-
-        printf("%s, \t %d dBm \t %s \n", result->b.essid, level, buffer);
+        //printf("%s, \t %d dBm \t %s \n", result->b.essid, level, buffer);
 
         result = result->next;
         if(result !=NULL)

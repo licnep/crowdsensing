@@ -1,0 +1,4 @@
+- magari spostare le define relative a USD descriptor in SensoreUSB.cpp
+- verificare se mandare una richiesta misurazione I2C ad ogni ciclo va bene
+- sostituire lock_guard fra graffe nel main con unique lock, o solo facendo lock del mutex
+- fare che rasp scrive il log su /var/log/crowdsensing/
