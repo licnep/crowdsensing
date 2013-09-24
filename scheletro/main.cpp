@@ -12,6 +12,11 @@
 #include <stdio.h>
 #include <libusb-1.0/libusb.h>
 
+#define my_vid 0x04d8
+#define my_pid 0x0023 //numero del gruppo (35)
+#define my_ep 0x81
+#define my_ifc 0
+
 void threadComunicazioneServer(); //definito piu' in basso
 
 using namespace std;
@@ -22,32 +27,24 @@ std::mutex mutexLettureDaInviare;
 std::condition_variable ciSonoLettureDaInviare;
 
 int main(int argc, char* argv[]) {
-    
-    CrowdSensing cs("80:1f:02:87:82:84","gruppo35","034FpK69l4",true); //true significa che comunichiamo con la versione non test
-    cs.getLocation();
-
-    return 0;
-    
-
 	Sensor s_polveri(01,"mg/m^3"), s_temp(02,"Celsius"), s_umidita(03,"%"), temp_rasp(11,"Celsius"), umidita_rasp(12,"%");
 	
 	cout << "Crowdsensing v0.0" << endl;
-        
+    
     //Inizializzazione sensore USB
-    SensoreUSB sensoreUSB;
-    sensoreUSB.init();
+    SensoreUSB sensoreUSB(my_vid,my_pid,my_ifc,my_ep);
     
     //Inizializzazione sensore I2C
-    SensoreI2C sensoreInterno;
+    /*SensoreI2C sensoreInterno;
     //la variabile cicliDaUltimaRichiestaTemp e' usata perche' la temperatura non la richiediamo ad ogni ciclo
     unsigned int cicliDaUltimaRichiestaTemp = 0;
 
     int error = sensoreInterno.init();
     if (error!=0) 
     {	
-            cout << "Errore inizializzazione i2c. Uscita forzata." << endl;
+            cerr << "Errore inizializzazione i2c. Uscita forzata." << endl;
             exit(1);
-    }
+    }*/
             
 	//avvio il thread di comunicazione col server
 	std::thread thread2(threadComunicazioneServer);
@@ -67,7 +64,7 @@ int main(int argc, char* argv[]) {
         //FINE LETTURA USB
 
         //Lettura sensore interno I2C
-		cicliDaUltimaRichiestaTemp++;
+		/*cicliDaUltimaRichiestaTemp++;
 		if (cicliDaUltimaRichiestaTemp > 5)
 		{
 			double umiditaInterna, temperaturaInterna;
@@ -79,10 +76,10 @@ int main(int argc, char* argv[]) {
 			}
 			sensoreInterno.send_measurement_request();
 			cicliDaUltimaRichiestaTemp = 0;
-		}
+		}*/
 
 		auto millisecondiDaUltimoSalvataggio = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now() - ultimoSalvataggio).count();
-		if (millisecondiDaUltimoSalvataggio > 5*60*1000) //5*60*1000=5 minuti
+		if (millisecondiDaUltimoSalvataggio > 10*1000) //5*60*1000=5 minuti
 		{
 			ultimoSalvataggio = std::chrono::system_clock::now();
 			{
@@ -122,7 +119,7 @@ void threadComunicazioneServer()
 	list<list<SensorReading>> codaLocale;
         
     //inizializzazione CrowdSensing
-    CrowdSensing cs("80:1f:02:87:82:84","gruppo35","034FpK69l4",true); //true significa che comunichiamo con la versione non test
+    CrowdSensing cs("80:1f:02:87:82:84","gruppo35","034FpK69l4",false); //true significa che comunichiamo con la versione non test
 
     cs.checkAPIVersion();
     cs.getLocation();
@@ -132,7 +129,7 @@ void threadComunicazioneServer()
     if (device_id==-1)
     {
         //the device hasn't been registered yet.
-        fprintf(stderr,"Can't find a device on server side with this mac. Creating one...\n");
+        cerr << "Can't find a device on server side with this mac. Creating one...\n";
         cs.addDevice();
     }
     

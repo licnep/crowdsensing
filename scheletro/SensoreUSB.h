@@ -12,7 +12,7 @@
 
 class SensoreUSB {
 public:
-    SensoreUSB();
+	SensoreUSB(unsigned int vid, unsigned int pid, int ifc, unsigned char ep);
     int init();
     int interruptTransfer();
     double getDust();
@@ -20,16 +20,16 @@ public:
     double getHum();
     int close();
     SensoreUSB(const SensoreUSB& orig);
-    virtual ~SensoreUSB();
+    ~SensoreUSB();
 private:
     unsigned char data[6];
-    unsigned short hum=0,temp=0;
-    float dust=0,vdust;
-    int actual;
     double humDouble, tempDouble, dustDouble;
     
     libusb_context *ctx = NULL;
     libusb_device_handle *dev_handle;
+	uint16_t vendor_id,product_id;
+	unsigned char endpoint;
+	int interface_id;
 };
 
 #endif	/* SENSOREUSB_H */
