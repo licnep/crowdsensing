@@ -74,7 +74,7 @@ void CrowdSensing::getLocation(){
 
     //std::string  sresult = cw.sendMessage(CurlWrapper::POST,baseURL + "/device/" +raspb_wifi_mac + "/geolocate",json.str(), true);
     //std::string  sresult = cw.sendMessage(CurlWrapper::POST,"https://www.googleapis.com/geolocation/v1/geolocate?key=AIzaSyC8i79TqtQm9gAbFngp4TsfH7JLr6NMOLE",json.str(), true);
-    std::cout << std::string  sresult = cw.sendMessage(CurlWrapper::POST,"http://jonjonson.com/crowdsensing/proxy.php?url=https://www.googleapis.com/geolocation/v1/geolocate?key=AIzaSyBlab35Z_3d-2p41w2uhWfzwPpLPi0zjlY",json.str(), true);
+    std::string  sresult = cw.sendMessage(CurlWrapper::POST,"http://jonjonson.com/crowdsensing/proxy.php?url=https://www.googleapis.com/geolocation/v1/geolocate?key=AIzaSyBlab35Z_3d-2p41w2uhWfzwPpLPi0zjlY",json.str(), true);
 
     std::cout << "[Risposta API geolocalizzazione]:" << sresult.c_str() << std::endl;
 
@@ -213,7 +213,7 @@ int CrowdSensing::getDeviceIDFromMac(std::string  mac_address)
     bool parsingSuccessful = reader.parse( devices, root );
     if ( !parsingSuccessful )
     {
-        std::cerr << "Failed to parse device list" << devices.c_str() << endl;
+        std::cerr << "Failed to parse device list" << devices.c_str() << std::endl;
         return -1;
     }
     //look for a device with this mac address

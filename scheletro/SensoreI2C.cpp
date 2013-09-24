@@ -1,4 +1,5 @@
 #include "SensoreI2C.h"
+#include <iostream>
 
 SensoreI2C::SensoreI2C()
 {

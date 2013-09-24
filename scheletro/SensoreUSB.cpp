@@ -29,11 +29,13 @@ SensoreUSB::SensoreUSB(unsigned int vid, unsigned int pid, int ifc, unsigned cha
 
 }
 
+/**
+    Ritorna 1 in caso di successo, 0 altrimenti
+*/
 int SensoreUSB::init() 
 {
     dev_handle = libusb_open_device_with_vid_pid(ctx, vendor_id,product_id);
     if(dev_handle == NULL){
-            std::cerr << "Cannot open device\n";
 			return 0;
 	}
     else
@@ -52,9 +54,10 @@ int SensoreUSB::init()
 	int r = libusb_claim_interface(dev_handle, interface_id);
     if(r!=0) {
             std::cerr << "Cannot claim interface\n";
-            return 1;
+            return 0;
     }
     std::cout << "Claimed interface\n\n";
+    return 1;
 }
 
 /**
@@ -80,7 +83,7 @@ int SensoreUSB::interruptTransfer()
             }
 	}
 	else if(r==LIBUSB_ERROR_NO_DEVICE){
-			std::cerr << "Read error. Device deatched\n";
+			std::cerr << "[ERROR] Read error. Device deatched\n";
 			//se si stacca l'usb restiamo in attesa finche' non viene riattaccata
 			while(!init());
 	}

@@ -1,5 +1,5 @@
 #include "CurlWrapper.h"
-
+#include <iostream>
 
 CurlWrapper::CurlWrapper(std::string username, std::string password)
 {
