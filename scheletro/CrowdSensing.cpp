@@ -27,14 +27,12 @@ apinfo CrowdSensing::getAPList(){
 
     /* Get some metadata to use for scanning */
     if (iw_get_range_info(sock, interface.c_str(), &(info.range)) < 0) {
-        std::cerr << "Error during iw_get_range_info. Aborting.\n";
-        exit(2);
+        throw std::runtime_error("Error during iw_get_range_info.\n");
     }
 
   /* Perform the scan */
     if (iw_scan(sock, const_cast<char*>(interface.c_str()), info.range.we_version_compiled, &(info.head)) < 0) {
-        std::cerr << "Error during iw_scan. Aborting.\n";
-        exit(2);
+        throw std::runtime_error("Error during iw_scan.\n");
     }
 
     return info;
@@ -44,8 +42,19 @@ void CrowdSensing::getLocation(){
 
     int level=0;
     char buffer[128];
-    std::stringstream json;    
-    apinfo info=getAPList();
+    std::stringstream json;
+    apinfo info;
+    try
+    {
+        info=getAPList();
+    }
+    catch(std::runtime_error& e)
+    {
+        std::cerr << e.what() << std::endl;
+        useHardcodedLocation();
+        return;
+    }
+
     wireless_scan *result=info.head.result;
 
     json << "{\"wifiAccessPoints\": [";
@@ -63,8 +72,7 @@ void CrowdSensing::getLocation(){
                     "\"signalToNoiseRatio\":" << (int)result->stats.qual.qual  << "}";	
 
         result = result->next;
-        if(result !=NULL)
-        json << ",";
+        if(result !=NULL) json << ",";
     }
 
     json << "]}";
@@ -83,13 +91,6 @@ void CrowdSensing::getLocation(){
         this->position["kind"] = "latitude#location";
         try
         {
-            /*
-            this->position["timestampMs"] = root["timestampMs"].asString();
-            this->position["latitude"] = root["latitude"].asDouble();
-            this->position["longitude"] = root["longitude"].asDouble();
-            this->position["accuracy"] = root["accuracy"].asInt();       
-            this->position["height_meters"] = 0;*/
-
             //la risposta dell'api google e' diversa quindi il parsing da fare e' leggermente diverso:
             this->position["timestampMs"] = root["timestampMs"].asString();
             this->position["latitude"] = root["location"]["lat"].asDouble();
@@ -98,10 +99,7 @@ void CrowdSensing::getLocation(){
             this->position["height_meters"] = 0;
             std::cout << this->position;
 
-            if (position["accuracy"]==0.0) 
-            {
-                throw std::runtime_error("Accuracy=0, errore nella geolocalizzazione");   
-            }
+            if (position["accuracy"]==0.0) useHardcodedLocation();
 
             //non ci sono stati errori, return. Altrimenti fallback verso la location scritta a mano piu' in basso
             return;
@@ -112,8 +110,13 @@ void CrowdSensing::getLocation(){
         }
     }
 
+    //se siamo qui vuol dire che la geolocalizzazione e' fallita, fallback
+    useHardcodedLocation();
+}
+
+void CrowdSensing::useHardcodedLocation() 
+{
     std::cerr << "Using hardcoded location.\n";
-    
     //per latitudine e longitudine usato http://diveintohtml5.info/geolocation.html
     this->position["kind"] = "latitude#location";
     this->position["timestampMs"] = "1374105807337";
@@ -121,7 +124,6 @@ void CrowdSensing::getLocation(){
     this->position["longitude"] = (double)7.87265;
     this->position["accuracy"] = 71;
     this->position["height_meters"] = 0;
-
 }
 
 

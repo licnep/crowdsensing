@@ -17,6 +17,7 @@ struct apinfo_s{
 
 typedef struct apinfo_s apinfo;
 
+
 class feed
 {
 public:
@@ -51,7 +52,7 @@ public:
     
 private:
     apinfo getAPList();
-
+    void useHardcodedLocation() ;
 
     std::string  baseURL; //by default it points to the test API. 
     CurlWrapper cw;
