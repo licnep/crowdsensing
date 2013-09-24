@@ -18,18 +18,6 @@ struct apinfo_s{
 typedef struct apinfo_s apinfo;
 
 
-class feed
-{
-public:
-    int local_feed_id;
-    std::string tags;
-    double average;
-    double variance;    
-    std::string units;
-    std::string lastUpdated; //timestamp of the last update
-    std::vector<double> measures;
-};
-
 class CrowdSensing
 {
 public:
@@ -42,7 +30,6 @@ public:
     void getDeviceInfo(std::string  MACaddress);
     std::string listFeeds();
     void addFeed(int local_feed_id, std::string  tags);
-    std::map<int,feed> get_local_feeds();
     std::string  listRegisteredDevices();
     
     void getLocation();
@@ -58,8 +45,7 @@ private:
     CurlWrapper cw;
     std::string  raspb_wifi_mac;
     std::string  username;
-    std::string  password;
-    std::map<int, feed> local_feeds;
+    std::string  password;    
 	Json::Value position;
 };
 

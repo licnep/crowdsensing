@@ -271,16 +271,12 @@ std::string  CrowdSensing::listFeeds()
 }
 
 /**
- * Add feeds locally and remotely if they don't yet exist
+ * Add feeds remotely if they don't yet exist
  * @param local_feed_id
  * @param tags comma separated tags
  */
 void CrowdSensing::addFeed(int local_feed_id, std::string  tags = "")
 {
-    local_feeds[local_feed_id].local_feed_id = local_feed_id;
-    local_feeds[local_feed_id].tags = tags;
-    local_feeds[local_feed_id].lastUpdated = getCurrentDateUTC();
-    //update feeds remotely
     std::stringstream json;
     json << "{\"tags\":\"" << tags << "\",\"local_feed_id\":" << local_feed_id << "}";
     std::string  result = cw.sendMessage(CurlWrapper::POST,baseURL + "/devices/"+raspb_wifi_mac+"/feeds",json.str(),true);
@@ -302,8 +298,4 @@ std::string  CrowdSensing::getCurrentDateUTC()
     return std::string(buffer);
 }
 
-std::map<int,feed> CrowdSensing::get_local_feeds() 
-{
-    return local_feeds;
-}
 
