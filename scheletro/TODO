@@ -1,6 +1,3 @@
-- magari spostare le define relative a USD descriptor in SensoreUSB.cpp
-- fare che rasp scrive il log su /var/log/crowdsensing/
-- scommentare I2C
-- rimettere ogni 5 minuti
+- tutti gli errori della geolocalizzazione devono portare a quella hardcoded
 
 - [non fatto perche' cosi' e' piu' sicuro da eccezioni] sostituire lock_guard fra graffe nel main con unique lock, o solo facendo lock del mutex

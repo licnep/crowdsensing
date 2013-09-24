@@ -27,7 +27,6 @@ apinfo CrowdSensing::getAPList(){
 
     /* Get some metadata to use for scanning */
     if (iw_get_range_info(sock, interface.c_str(), &(info.range)) < 0) {
-        //TO DO: qui fare un blocco try-catch e gestire l'errore
         std::cerr << "Error during iw_get_range_info. Aborting.\n";
         exit(2);
     }
@@ -62,7 +61,6 @@ void CrowdSensing::getLocation(){
                     "\"age\":0,"
                     "\"channel\":"<< iw_freq_to_channel(result->b.freq,&(info.range))  << ","
                     "\"signalToNoiseRatio\":" << (int)result->stats.qual.qual  << "}";	
-        //printf("%s, \t %d dBm \t %s \n", result->b.essid, level, buffer);
 
         result = result->next;
         if(result !=NULL)
@@ -73,7 +71,6 @@ void CrowdSensing::getLocation(){
     std::cout << json.str() << "\n\n";
 
     //std::string  sresult = cw.sendMessage(CurlWrapper::POST,baseURL + "/device/" +raspb_wifi_mac + "/geolocate",json.str(), true);
-    //std::string  sresult = cw.sendMessage(CurlWrapper::POST,"https://www.googleapis.com/geolocation/v1/geolocate?key=AIzaSyC8i79TqtQm9gAbFngp4TsfH7JLr6NMOLE",json.str(), true);
     std::string  sresult = cw.sendMessage(CurlWrapper::POST,"http://50.7.20.26/crowdsensing/proxy.php?url=https://www.googleapis.com/geolocation/v1/geolocate?key=AIzaSyBlab35Z_3d-2p41w2uhWfzwPpLPi0zjlY",json.str(), true);
 
     std::cout << "[Risposta API geolocalizzazione]:" << sresult.c_str() << std::endl;
