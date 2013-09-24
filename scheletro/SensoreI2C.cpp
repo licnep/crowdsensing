@@ -27,7 +27,7 @@ int SensoreI2C::init()
 	this->file = open(filename, O_RDWR);
 	if (file < 0) 
 	{
-		fprintf(stderr, "ERROR: Can't open %s (are you root? did you run 'modprobe i2c-dev'?)\n",filename);
+		std::cerr << "ERROR: Can't open " << filename << " (are you root? did you run 'modprobe i2c-dev'?)\n";
 		return(1);
 	}
 
@@ -38,7 +38,7 @@ int SensoreI2C::init()
 	int addr = 0x27; //humidity sensor address
 	if (ioctl(file,I2C_SLAVE, addr) < 0) //change the slave address
 	{
-		fprintf(stderr, "ERROR: cannot select slave n.%d\n",addr);
+		std::cerr << "ERROR: cannot select slave n." << addr << std::endl;
 		return(1);
 	}
 	return 0;
@@ -57,7 +57,7 @@ int SensoreI2C::send_measurement_request()
 	ssize_t written = write(file,buffer,0); //write 0 bytes
     if (written < 0)
     {
-            fprintf(stderr, "ERROR: failed sending measurement request (empty write message)\n");
+            std::cerr << "ERROR: failed sending measurement request (empty write message)\n";
             return(-1);
 	}
 	return 0;
@@ -78,7 +78,7 @@ int SensoreI2C::humidity_and_temperature_data_fetch(double *humidity, double *te
         ssize_t readLength = read(file, buffer,sizeof(unsigned char)*4);
         if (readLength < 0)
         {
-                fprintf(stderr, "ERROR: reading failed.\n");
+                std::cerr << "ERROR: reading failed.\n";
                 return(-1);
         }
 
@@ -89,16 +89,16 @@ int SensoreI2C::humidity_and_temperature_data_fetch(double *humidity, double *te
 	if (status==0b0000001)
 	{
 		//fprintf(stderr, "WARNING: stale data\n"); //you should read later or send a measurement request if you haven't
-		return 1;
+		return -1;
 	}
 	else if (status==0b00000010)
 	{
-		fprintf(stderr, "ERROR: device in Command Mode\n");
+		std::cerr << "ERROR: device in Command Mode\n";
 		return -1;
 	}
 	else if (status!=0)
 	{
-		fprintf(stderr, "ERROR: unknown status %d!\n",status);
+		std::cerr << "ERROR: unknown status " << status << "!\n";
 		return -1;
 	}
 
@@ -106,7 +106,6 @@ int SensoreI2C::humidity_and_temperature_data_fetch(double *humidity, double *te
 
 	_humidity = ((buffer[0] & 0b00111111) << 8) | buffer[1];
 	_temperature = (buffer[2] << 6) | (buffer[3] >> 2);
-
 
 	//conversion to double.
 	//humidity must be divided by 2^14-2 to get the percentage.

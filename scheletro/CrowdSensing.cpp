@@ -18,13 +18,8 @@ CrowdSensing::CrowdSensing(std::string  raspb_wifi_mac,std::string  username, st
 
 //TO DO: vedere se è possibile ottenere la lista delle interfacce attive, così da selezionare dinamicamente quella giusta
 apinfo CrowdSensing::getAPList(){
-    apinfo info;	
-    //wireless_scan_head head;
-    //wireless_scan *result;
-    //iwstats stats;
-    //iwrange range;
+    apinfo info;
     int sock;
-
 
     /* Open socket to kernel */
     sock = iw_sockets_open();
@@ -34,14 +29,14 @@ apinfo CrowdSensing::getAPList(){
     /* Get some metadata to use for scanning */
     if (iw_get_range_info(sock, interface.c_str(), &(info.range)) < 0) {
         //TO DO: qui fare un blocco try-catch e gestire l'errore
-        printf("Error during iw_get_range_info. Aborting.\n");
+        std::cerr << "Error during iw_get_range_info. Aborting.\n";
         exit(2);
     }
 
   /* Perform the scan */
     if (iw_scan(sock, const_cast<char*>(interface.c_str()), info.range.we_version_compiled, &(info.head)) < 0) {
         //TO DO: qui fare un blocco try-catch e gestire l'errore
-        printf("Error during iw_scan. Aborting.\n");
+        std::cerr << "Error during iw_scan. Aborting.\n";
         exit(2);
     }
 
@@ -86,9 +81,9 @@ void CrowdSensing::getLocation(){
 
     //std::string  sresult = cw.sendMessage(CurlWrapper::POST,baseURL + "/device/" +raspb_wifi_mac + "/geolocate",json.str(), true);
     //std::string  sresult = cw.sendMessage(CurlWrapper::POST,"https://www.googleapis.com/geolocation/v1/geolocate?key=AIzaSyC8i79TqtQm9gAbFngp4TsfH7JLr6NMOLE",json.str(), true);
-    std::string  sresult = cw.sendMessage(CurlWrapper::POST,"http://jonjonson.com/crowdsensing/proxy.php?url=https://www.googleapis.com/geolocation/v1/geolocate?key=AIzaSyBlab35Z_3d-2p41w2uhWfzwPpLPi0zjlY",json.str(), true);
+    std::cout << std::string  sresult = cw.sendMessage(CurlWrapper::POST,"http://jonjonson.com/crowdsensing/proxy.php?url=https://www.googleapis.com/geolocation/v1/geolocate?key=AIzaSyBlab35Z_3d-2p41w2uhWfzwPpLPi0zjlY",json.str(), true);
 
-    printf("[Risposta API geolocalizzazione]:%s\n\n",sresult.c_str());
+    std::cout << "[Risposta API geolocalizzazione]:" << sresult.c_str() << std::endl;
 
     Json::Reader reader;
     Json::Value root;
@@ -123,11 +118,11 @@ void CrowdSensing::getLocation(){
         }
         catch(std::exception& e) 
         {
-            printf("Exception while parsing location.\nMessage: %s\n",e.what());
+            std::cerr << "Exception while parsing location.\nMessage: " << e.what() << std::endl;
         }
     }
 
-    fprintf( stderr,"Using hardcoded location.\n" );
+    std::cerr << "Using hardcoded location.\n";
     
     //per latitudine e longitudine usato http://diveintohtml5.info/geolocation.html
     this->position["kind"] = "latitude#location";
@@ -179,7 +174,7 @@ int CrowdSensing::inviaRilevazioni(std::list<SensorReading> &lista)
         if ( !parsingSuccessful )
         {       
             // report to the user the failure and their locations in the document.
-            std::cout << getCurrentDateUTC() << " Failed to parse json response: \n" << reader.getFormattedErrorMessages();
+            std::cerr << getCurrentDateUTC() << " Failed to parse json response: \n" << reader.getFormattedErrorMessages();
             return 0;
         } 
         else {
@@ -190,12 +185,12 @@ int CrowdSensing::inviaRilevazioni(std::list<SensorReading> &lista)
                 return 1;
             } 
             else {
-                std::cout << "mac DIVERSI :(\n" ;
+                std::cerr << "mac DIVERSI :(\n" ;
                 return 0;
             }
         }
     } else {
-        std::cout << CrowdSensing::getCurrentDateUTC() << " Errore nell'invio, riprovo dopo." << std::endl;
+        std::cerr << CrowdSensing::getCurrentDateUTC() << " Errore nell'invio, riprovo dopo." << std::endl;
     }
     return 0;
 }
@@ -207,7 +202,7 @@ void CrowdSensing::checkAPIVersion()
     printf("[API version]: %s\n",result.c_str());
     if(result.compare("0.4.9-test")&&result.compare("0.4.9"))
     {
-        fprintf(stderr,"WARNING: API current version is %s, this program was written for 0.4.9-test, something important may have changed\n",result.c_str());
+        std::cerr << "WARNING: API current version is " << result.c_str() << ", this program was written for 0.4.9-test, something important may have changed\n";
     }
 }
 
@@ -225,7 +220,7 @@ int CrowdSensing::getDeviceIDFromMac(std::string  mac_address)
     bool parsingSuccessful = reader.parse( devices, root );
     if ( !parsingSuccessful )
     {
-        fprintf(stderr,"Failed to parse device list\n%s",devices.c_str());
+        std::cerr << "Failed to parse device list" << devices.c_str() << endl;
         return -1;
     }
     //look for a device with this mac address
@@ -240,7 +235,7 @@ int CrowdSensing::getDeviceIDFromMac(std::string  mac_address)
             }
             catch(std::exception e) 
             {
-                printf("Exception while parsing device list.\n");
+                std::cerr << "Exception while parsing device list.\n";
                 return -1;
             }
             if (mac==mac_address)
@@ -252,7 +247,7 @@ int CrowdSensing::getDeviceIDFromMac(std::string  mac_address)
                 }
                 catch(std::exception e) 
                 {
-                    printf("Exception while parsing device list (device_id).\n");
+                    std::cerr << "Exception while parsing device list (device_id).\n";
                     return -1;
                 }
                 return id;
@@ -265,21 +260,21 @@ int CrowdSensing::getDeviceIDFromMac(std::string  mac_address)
 void CrowdSensing::getDeviceInfo(std::string  MACaddress) 
 {
     std::string  result = cw.sendMessage(CurlWrapper::GET,baseURL + std::string("/devices/")+ MACaddress);
-    printf("[Device Info]:\n%s",result.c_str());
+    std::cout << "[Device Info]:\n" << result.c_str() << std::endl;
 }
 
 void CrowdSensing::addDevice()
 {
     std::string  json = "{\"username\":\""+username+"\",\"raspb_wifi_mac\":\""+raspb_wifi_mac+"\"}";
     std::string  result = cw.sendMessage(CurlWrapper::POST,baseURL + std::string("/devices"),json,true);
-    printf("[Add Device]: %s\n",result.c_str());
+    std::cout << "[Add Device]: %s" << result.c_str() << std::endl;
     //if a device with this mac already exists, returns "InvalidPostException: Posting new Device with [mac=00:11:22:33:9d:fe] but it is already there ! - use put to modify"
 }
 
 std::string  CrowdSensing::listFeeds()
 {
     std::string  result = cw.sendMessage(CurlWrapper::GET,baseURL + "/devices/"+raspb_wifi_mac+"/feeds");
-    printf("[List Feeds]:%s\n",result.c_str());
+    std::cout << "[List Feeds]:%s" << result.c_str() << std::endl;
     return result;
 }
 
@@ -297,7 +292,7 @@ void CrowdSensing::addFeed(int local_feed_id, std::string  tags = "")
     std::stringstream json;
     json << "{\"tags\":\"" << tags << "\",\"local_feed_id\":" << local_feed_id << "}";
     std::string  result = cw.sendMessage(CurlWrapper::POST,baseURL + "/devices/"+raspb_wifi_mac+"/feeds",json.str(),true);
-    printf("[Add Feed]: %s\n",result.c_str());
+    std::cout << "[Add Feed]: " << result.c_str() << std::endl;
 }
 
 std::string  CrowdSensing::listRegisteredDevices() 

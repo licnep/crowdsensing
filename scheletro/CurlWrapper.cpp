@@ -25,14 +25,14 @@ std::string CurlWrapper::sendMessage(int method,std::string APIendpoint,std::str
 {        
     if (method!=GET&&method!=POST)
     {
-        fprintf(stderr,"ERROR: called sendMessage with a method different from CurlWrapper::GET or CurlWrapper::POST\n");
-        fprintf(stderr,"ERROR: sendMessage aborted. Didn't send to '%s'\n",APIendpoint.c_str());
+        std::cerr << "ERROR: called sendMessage with a method different from CurlWrapper::GET or CurlWrapper::POST\n";
+        std::cerr << "ERROR: sendMessage aborted. Didn't send to " << APIendpoint.c_str() << std::endl;
         return "";
     }
     if (!curl)
     {
-        fprintf(stderr,"ERROR: curl wasn't properly initialized.\n");
-        fprintf(stderr,"ERROR: sendMessage aborted. Didn't send to '%s'\n",APIendpoint.c_str());
+        std::cerr << "ERROR: curl wasn't properly initialized.\n";
+        std::cerr << "ERROR: sendMessage aborted. Didn't send to " << APIendpoint.c_str() << std::endl;
         return "";
     }
     //create the buffer where we save the result of the request:
@@ -64,7 +64,7 @@ std::string CurlWrapper::sendMessage(int method,std::string APIendpoint,std::str
     res = curl_easy_perform(curl);
     if(res != CURLE_OK) 
     {
-        fprintf(stderr, "ERROR: in sendMessage curl_easy_perform() failed: %s1n",curl_easy_strerror(res));
+        std::cerr << "ERROR: in sendMessage curl_easy_perform() failed: " << curl_easy_strerror(res) << std::endl;
         return "";
     }
     return stringaRisposta;
@@ -83,7 +83,7 @@ void CurlWrapper::digestAuthenticate(std::string username, std::string password,
     res = curl_easy_perform(curl);
     if(res != CURLE_OK) 
     {
-        fprintf(stderr, "in digestAuthenticate curl_easy_perform() failed: %s\n",curl_easy_strerror(res));
+        std::cerr << "in digestAuthenticate curl_easy_perform() failed: " << curl_easy_strerror(res) << std::endl;
         return;
     }
 }
