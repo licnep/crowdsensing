@@ -35,7 +35,7 @@ int main(int argc, char* argv[]) {
     SensoreUSB sensoreUSB(my_vid,my_pid,my_ifc,my_ep);
     
     //Inizializzazione sensore I2C
-    /*SensoreI2C sensoreInterno;
+    SensoreI2C sensoreInterno;
     //la variabile cicliDaUltimaRichiestaTemp e' usata perche' la temperatura non la richiediamo ad ogni ciclo
     unsigned int cicliDaUltimaRichiestaTemp = 0;
 
@@ -44,7 +44,7 @@ int main(int argc, char* argv[]) {
     {	
             cerr << "Errore inizializzazione i2c. Uscita forzata." << endl;
             exit(1);
-    }*/
+    }
             
 	//avvio il thread di comunicazione col server
 	std::thread thread2(threadComunicazioneServer);
@@ -64,8 +64,8 @@ int main(int argc, char* argv[]) {
         //FINE LETTURA USB
 
         //Lettura sensore interno I2C
-		/*cicliDaUltimaRichiestaTemp++;
-		if (cicliDaUltimaRichiestaTemp > 5)
+		cicliDaUltimaRichiestaTemp++;
+		if (cicliDaUltimaRichiestaTemp > 7)
 		{
 			double umiditaInterna, temperaturaInterna;
             int result = sensoreInterno.humidity_and_temperature_data_fetch(&umiditaInterna,&temperaturaInterna);
@@ -76,10 +76,10 @@ int main(int argc, char* argv[]) {
 			}
 			sensoreInterno.send_measurement_request();
 			cicliDaUltimaRichiestaTemp = 0;
-		}*/
+		}
 
 		auto millisecondiDaUltimoSalvataggio = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now() - ultimoSalvataggio).count();
-		if (millisecondiDaUltimoSalvataggio > 10*1000) //5*60*1000=5 minuti
+		if (millisecondiDaUltimoSalvataggio > 5*60*1000) //5*60*1000=5 minuti
 		{
 			ultimoSalvataggio = std::chrono::system_clock::now();
 			{
@@ -91,6 +91,7 @@ int main(int argc, char* argv[]) {
 				lettureDaInviare.push_front(SensorReading(s_umidita));
 				lettureDaInviare.push_front(SensorReading(temp_rasp));
 				lettureDaInviare.push_front(SensorReading(umidita_rasp));
+				//qui il mutex viene rilasciato uscendo dallo scope
 			}
 			
 			//notifico l'altro thread che c'e' roba da inviare in coda:

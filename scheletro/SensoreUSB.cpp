@@ -8,10 +8,6 @@
 #include "SensoreUSB.h"
 #include <iostream>
 
-/*#define my_vid 0x04d8
-#define my_pid 0x0023
-#define ep 0x81*/
-
 SensoreUSB::SensoreUSB(unsigned int vid, unsigned int pid, int ifc, unsigned char ep) {
 	vendor_id=vid;
 	product_id=pid;
@@ -19,14 +15,15 @@ SensoreUSB::SensoreUSB(unsigned int vid, unsigned int pid, int ifc, unsigned cha
 	endpoint=ep;
 
 	int r;
-	 r=libusb_init(&ctx);
+	r=libusb_init(&ctx);
     if(r!=0){
             std::cerr << "Init error\n";
             exit(1);
     }
-	if(!init())
+	if(!init()) {
+        std::cerr << "[ERROR]: USB sensor not connected" << std::endl;
 		exit(0);
-
+    }
 }
 
 /**
