@@ -19,9 +19,6 @@ Sensor::~Sensor(void)
 **/
 void Sensor::aggiungiMisura(double misura)
 {
-	
-	//this->average = misura;
-
 	n_misure++;
 
     // See Knuth TAOCP vol 2, 3rd edition, page 232
