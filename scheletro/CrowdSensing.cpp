@@ -157,7 +157,7 @@ int CrowdSensing::inviaRilevazioni(std::list<SensorReading> &lista)
     //se inviato con successo svuoto la lista
     if (result.compare("")!=0) 
     {
-        std::cout << getCurrentDateUTC() << "RISPOSTA: " << result.c_str() << std::endl;
+        std::cout << getCurrentDateUTC() << " RISPOSTA: " << result.c_str() << std::endl;
         //se tutto e' andato bene il server risponde con lo stesso json che gli e' stato inviato
         //facciamo il parsing per verificare
         Json::Value rootReply;

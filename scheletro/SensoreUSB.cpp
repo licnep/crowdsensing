@@ -83,9 +83,11 @@ int SensoreUSB::interruptTransfer()
 			std::cerr << "[ERROR] Read error. Device deatched\n";
 			//se si stacca l'usb restiamo in attesa finche' non viene riattaccata
 			while(!init());
+            std::cerr << "[FIXED] Device reattached\n";
 	}
-	else
-            std::cerr << "USB Read error\n";
+	else {
+        std::cerr << "USB Read error\n";
+    }
     
 }
 

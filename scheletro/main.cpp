@@ -171,8 +171,8 @@ void threadComunicazioneServer()
 	        //attende un po' prima di ritentare il rinvio
 	        std::this_thread::sleep_for( std::chrono::milliseconds( 1000 ) );
 		}
-        //limitiamo la lunghezza della coda, conserva massimo 3 giorni di rilevazioni
-        while (codaLocale.size()>1000)
+        //limitiamo la lunghezza della coda, conserva massimo 12 giorni di rilevazioni
+        while (codaLocale.size()>4000)
         {
             codaLocale.pop_back();
         }           
