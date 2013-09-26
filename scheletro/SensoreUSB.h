@@ -13,12 +13,12 @@
 class SensoreUSB {
 public:
 	SensoreUSB(unsigned int vid, unsigned int pid, int ifc, unsigned char ep);
-    int init();
+   
     int interruptTransfer();
     double getDust();
     double getTemp();
     double getHum();
-    int close();
+   
     SensoreUSB(const SensoreUSB& orig);
     ~SensoreUSB();
 private:
@@ -30,6 +30,8 @@ private:
 	uint16_t vendor_id,product_id;
 	unsigned char endpoint;
 	int interface_id;
+	int init();
+	void close();
 };
 
 #endif	/* SENSOREUSB_H */

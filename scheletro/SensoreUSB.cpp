@@ -105,20 +105,15 @@ double SensoreUSB::getHum()
     return humDouble;
 }
 
-int SensoreUSB::close() 
+void SensoreUSB::close() 
 {
-    int r;
     //CHIUSURA USB
 
 	/*int usb_release_interface(usb_dev_handle *dev, int interface)
 	rilascia un'interfaccia precedentemente richiesta mediante la funzione usb_claim_interface.
 	La funzione ritorna 0 se il rilascio avviene con successo. 
 	*/
-    r = libusb_release_interface(dev_handle, 0);
-    if(r!=0) {
-            std::cerr << "Cannot release interface\n";
-            return 1;
-    }
+    libusb_release_interface(dev_handle, 0);
     std::cout << "Released interface\n";
 
 	/*void libusb_close	(libusb_device_handle * dev_handle)
@@ -138,5 +133,6 @@ SensoreUSB::SensoreUSB(const SensoreUSB& orig) {
 }
 
 SensoreUSB::~SensoreUSB() {
+	close();
 }
 
