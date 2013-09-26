@@ -105,8 +105,6 @@ int main(int argc, char* argv[]) {
 			umidita_rasp.reset();
 		}
 	}
-
-    sensoreUSB.close();
         
 	thread2.join();
 	return 0;
